@@ -1,12 +1,30 @@
 'use client'
 
-import { ArrowDown, ArrowUpRight, CircleDot, Menu, Play, X } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, CircleDot, Menu, Play, Volume2, X } from 'lucide-react'
 import { useState } from 'react'
 
 const reels = [
-  { number: '01', title: 'Can we disagree better?', tone: 'bg-ink', url: 'https://www.instagram.com/reel/DdOXIpaskCr/' },
-  { number: '02', title: 'The city is a classroom.', tone: 'bg-red', url: 'https://www.instagram.com/reel/DbGj8wQhBLQ/' },
-  { number: '03', title: 'Hot takes, cold drinks.', tone: 'bg-yellow', url: 'https://www.instagram.com/reel/Dc05BMcsmk_/' },
+  {
+    number: '01',
+    title: 'Can we disagree better?',
+    tone: 'bg-ink',
+    id: 'DdOXIpaskCr',
+    url: 'https://www.instagram.com/reel/DdOXIpaskCr/',
+  },
+  {
+    number: '02',
+    title: 'The city is a classroom.',
+    tone: 'bg-red',
+    id: 'DbGj8wQhBLQ',
+    url: 'https://www.instagram.com/reel/DbGj8wQhBLQ/',
+  },
+  {
+    number: '03',
+    title: 'Hot takes, cold drinks.',
+    tone: 'bg-yellow',
+    id: 'Dc05BMcsmk_',
+    url: 'https://www.instagram.com/reel/Dc05BMcsmk_/',
+  },
 ]
 
 const archive = [
@@ -27,6 +45,8 @@ function BrandMark() {
 
 export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [playingReel, setPlayingReel] = useState<string | null>(null)
+  const [showAllPlayers, setShowAllPlayers] = useState(false)
 
   return (
     <main id="top" className="site-shell">
@@ -107,16 +127,120 @@ export default function Page() {
       </section>
 
       <section className="reels-section section-pad">
-        <div className="section-label"><span>03</span><span>From the room</span><a href="https://www.instagram.com/hearmeout.amd" target="_blank" rel="noopener noreferrer">See Instagram <ArrowUpRight size={14} /></a></div>
-        <div className="reels-grid">
-          {reels.map((reel) => (
-            <a href={reel.url} target="_blank" rel="noopener noreferrer" className={`reel-card ${reel.tone}`} key={reel.number}>
-              <span className="reel-number">REEL {reel.number}</span>
-              <span className="play-button"><Play size={18} fill="currentColor" /></span>
-              <strong>{reel.title}</strong>
-              <span className="reel-arrow"><ArrowUpRight size={18} /></span>
+        <div className="section-label">
+          <div className="section-label-title">
+            <span>03</span>
+            <span>From the room</span>
+          </div>
+          <div className="reels-header-actions">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAllPlayers((prev) => !prev)
+                setPlayingReel(null)
+              }}
+              className="reels-mode-toggle"
+              aria-label={showAllPlayers ? 'Switch to poster view' : 'Run all reels in room'}
+            >
+              <Play size={12} fill="currentColor" />
+              <span>{showAllPlayers ? 'Show Posters' : 'Run All Reels'}</span>
+            </button>
+            <a href="https://www.instagram.com/hearmeout.amd" target="_blank" rel="noopener noreferrer">
+              See Instagram <ArrowUpRight size={14} />
             </a>
-          ))}
+          </div>
+        </div>
+
+        <div className="reels-grid">
+          {reels.map((reel) => {
+            const isPlaying = showAllPlayers || playingReel === reel.number
+
+            if (isPlaying) {
+              return (
+                <div className={`reel-card reel-card-playing ${reel.tone}`} key={reel.number}>
+                  <div className="reel-playing-header">
+                    <span className="reel-number">REEL {reel.number}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showAllPlayers) {
+                          setShowAllPlayers(false)
+                        }
+                        setPlayingReel(null)
+                      }}
+                      className="reel-close-button"
+                      aria-label="Close reel video"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  <div className="reel-video-container">
+                    <iframe
+                      src={`https://www.instagram.com/reel/${reel.id}/embed/`}
+                      className="reel-iframe"
+                      scrolling="no"
+                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                      allowFullScreen
+                      title={`Instagram Reel ${reel.number} - ${reel.title}`}
+                    />
+                  </div>
+
+                  <div className="reel-playing-footer">
+                    <span className="reel-audio-pill">
+                      <Volume2 size={13} /> Tap video to play/unmute
+                    </span>
+                    <a
+                      href={reel.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="reel-insta-badge"
+                    >
+                      Instagram <ArrowUpRight size={12} />
+                    </a>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setPlayingReel(reel.number)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setPlayingReel(reel.number)
+                  }
+                }}
+                className={`reel-card ${reel.tone}`}
+                key={reel.number}
+                aria-label={`Play Reel ${reel.number}: ${reel.title}`}
+              >
+                <div className="reel-top-row">
+                  <span className="reel-number">REEL {reel.number}</span>
+                  <span className="reel-badge-pill">
+                    <Volume2 size={11} /> Audio on
+                  </span>
+                </div>
+
+                <div className="play-button-wrapper">
+                  <span className="play-button">
+                    <Play size={20} fill="currentColor" />
+                  </span>
+                  <span className="play-callout">Play with audio</span>
+                </div>
+
+                <div className="reel-bottom-row">
+                  <strong>{reel.title}</strong>
+                  <span className="reel-arrow">
+                    <Play size={14} fill="currentColor" />
+                  </span>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
 
