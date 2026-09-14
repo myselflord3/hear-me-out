@@ -53,12 +53,12 @@ function BrandMark() {
 
 function ReelVideoCard({
   reel,
-  globalMuted,
-  setGlobalMuted,
+  isAudioActive,
+  onToggleAudio,
 }: {
   reel: ReelItem
-  globalMuted: boolean
-  setGlobalMuted: (muted: boolean) => void
+  isAudioActive: boolean
+  onToggleAudio: () => void
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -90,23 +90,19 @@ function ReelVideoCard({
     return () => observer.disconnect()
   }, [])
 
-  // Sync mute attribute with globalMuted state
+  // Sync mute attribute with isAudioActive
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.muted = globalMuted
-    }
-  }, [globalMuted])
-
-  const toggleSound = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const nextMuted = !globalMuted
-    setGlobalMuted(nextMuted)
-    if (videoRef.current) {
-      videoRef.current.muted = nextMuted
-      if (videoRef.current.paused) {
+      videoRef.current.muted = !isAudioActive
+      if (isAudioActive && videoRef.current.paused) {
         videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {})
       }
     }
+  }, [isAudioActive])
+
+  const handleSoundClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onToggleAudio()
   }
 
   const togglePlay = () => {
@@ -130,13 +126,13 @@ function ReelVideoCard({
       className={`reel-video-card ${reel.tone}`}
       onClick={togglePlay}
       role="region"
-      aria-label={`Reel ${reel.number}: ${reel.title}`}
+      aria-label={reel.title}
     >
       <video
         ref={videoRef}
         src={reel.videoSrc}
         playsInline
-        muted={globalMuted}
+        muted={!isAudioActive}
         loop
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
@@ -145,24 +141,23 @@ function ReelVideoCard({
 
       <div className="reel-gradient-overlay" aria-hidden="true" />
 
-      {/* Top overlay */}
+      {/* Top overlay with audio toggle only (reel badges removed) */}
       <div className="reel-overlay-top">
-        <span className="reel-pill-number">REEL {reel.number}</span>
         <button
           type="button"
-          onClick={toggleSound}
-          className={`reel-sound-toggle ${!globalMuted ? 'is-active' : ''}`}
-          aria-label={globalMuted ? 'Unmute video audio' : 'Mute video audio'}
+          onClick={handleSoundClick}
+          className={`reel-sound-toggle ${isAudioActive ? 'is-active' : ''}`}
+          aria-label={isAudioActive ? 'Mute video audio' : 'Turn on video audio'}
         >
-          {globalMuted ? (
-            <>
-              <VolumeX size={13} />
-              <span>Tap for Audio</span>
-            </>
-          ) : (
+          {isAudioActive ? (
             <>
               <Volume2 size={13} />
               <span>Audio On</span>
+            </>
+          ) : (
+            <>
+              <VolumeX size={13} />
+              <span>Tap for Audio</span>
             </>
           )}
         </button>
@@ -175,23 +170,13 @@ function ReelVideoCard({
         </div>
       )}
 
-      {/* Bottom overlay */}
+      {/* Bottom overlay with title and progress bar (Instagram redirect removed) */}
       <div className="reel-overlay-bottom">
         <div className="reel-progress-track">
           <div className="reel-progress-fill" style={{ width: `${progress}%` }} />
         </div>
         <div className="reel-bottom-content">
           <strong className="reel-video-title">{reel.title}</strong>
-          <a
-            href={reel.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="reel-insta-btn"
-            aria-label={`View Reel ${reel.number} on Instagram`}
-          >
-            Instagram <ArrowUpRight size={12} />
-          </a>
         </div>
       </div>
     </div>
@@ -200,7 +185,7 @@ function ReelVideoCard({
 
 export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [globalMuted, setGlobalMuted] = useState(true)
+  const [activeAudioReel, setActiveAudioReel] = useState<string | null>(null)
 
   return (
     <main id="top" className="site-shell">
@@ -282,24 +267,11 @@ export default function Page() {
 
       <section className="reels-section section-pad">
         <div className="section-label">
-          <div className="section-label-title">
-            <span>03</span>
-            <span>From the room</span>
-          </div>
-          <div className="reels-header-actions">
-            <button
-              type="button"
-              onClick={() => setGlobalMuted(!globalMuted)}
-              className="reels-mode-toggle"
-              aria-label={globalMuted ? 'Turn on sound for all reels' : 'Mute all reels'}
-            >
-              {globalMuted ? <Volume2 size={13} /> : <VolumeX size={13} />}
-              <span>{globalMuted ? 'Unmute Room' : 'Mute Room'}</span>
-            </button>
-            <a href="https://www.instagram.com/hearmeout.amd" target="_blank" rel="noopener noreferrer">
-              See Instagram <ArrowUpRight size={14} />
-            </a>
-          </div>
+          <span>03</span>
+          <span>From the room</span>
+          <a href="https://www.instagram.com/hearmeout.amd" target="_blank" rel="noopener noreferrer">
+            See Instagram <ArrowUpRight size={14} />
+          </a>
         </div>
 
         <div className="reels-grid">
@@ -307,8 +279,10 @@ export default function Page() {
             <ReelVideoCard
               key={reel.number}
               reel={reel}
-              globalMuted={globalMuted}
-              setGlobalMuted={setGlobalMuted}
+              isAudioActive={activeAudioReel === reel.number}
+              onToggleAudio={() =>
+                setActiveAudioReel((prev) => (prev === reel.number ? null : reel.number))
+              }
             />
           ))}
         </div>
