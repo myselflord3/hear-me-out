@@ -1,28 +1,36 @@
 'use client'
 
-import { ArrowDown, ArrowUpRight, CircleDot, Menu, Play, Volume2, X } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowDown, ArrowUpRight, CircleDot, Menu, Pause, Play, Volume2, VolumeX, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
-const reels = [
+interface ReelItem {
+  number: string
+  title: string
+  tone: string
+  videoSrc: string
+  url: string
+}
+
+const reels: ReelItem[] = [
   {
     number: '01',
     title: 'Can we disagree better?',
     tone: 'bg-ink',
-    id: 'DdOXIpaskCr',
+    videoSrc: '/reels/reel-1.mp4',
     url: 'https://www.instagram.com/reel/DdOXIpaskCr/',
   },
   {
     number: '02',
     title: 'The city is a classroom.',
     tone: 'bg-red',
-    id: 'DbGj8wQhBLQ',
+    videoSrc: '/reels/reel-2.mp4',
     url: 'https://www.instagram.com/reel/DbGj8wQhBLQ/',
   },
   {
     number: '03',
     title: 'Hot takes, cold drinks.',
     tone: 'bg-yellow',
-    id: 'Dc05BMcsmk_',
+    videoSrc: '/reels/reel-3.mp4',
     url: 'https://www.instagram.com/reel/Dc05BMcsmk_/',
   },
 ]
@@ -43,10 +51,156 @@ function BrandMark() {
   )
 }
 
+function ReelVideoCard({
+  reel,
+  globalMuted,
+  setGlobalMuted,
+}: {
+  reel: ReelItem
+  globalMuted: boolean
+  setGlobalMuted: (muted: boolean) => void
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+
+  // Scroll-triggered autoplay: plays when scrolled into view, pauses when scrolled out
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const playPromise = video.play()
+            if (playPromise !== undefined) {
+              playPromise.then(() => setIsPlaying(true)).catch(() => {})
+            }
+          } else {
+            video.pause()
+            setIsPlaying(false)
+          }
+        })
+      },
+      { threshold: 0.25 }
+    )
+
+    observer.observe(video)
+    return () => observer.disconnect()
+  }, [])
+
+  // Sync mute attribute with globalMuted state
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = globalMuted
+    }
+  }, [globalMuted])
+
+  const toggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const nextMuted = !globalMuted
+    setGlobalMuted(nextMuted)
+    if (videoRef.current) {
+      videoRef.current.muted = nextMuted
+      if (videoRef.current.paused) {
+        videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {})
+      }
+    }
+  }
+
+  const togglePlay = () => {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) {
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {})
+    } else {
+      videoRef.current.pause()
+      setIsPlaying(false)
+    }
+  }
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current && videoRef.current.duration) {
+      setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100)
+    }
+  }
+
+  return (
+    <div
+      className={`reel-video-card ${reel.tone}`}
+      onClick={togglePlay}
+      role="region"
+      aria-label={`Reel ${reel.number}: ${reel.title}`}
+    >
+      <video
+        ref={videoRef}
+        src={reel.videoSrc}
+        playsInline
+        muted={globalMuted}
+        loop
+        preload="metadata"
+        onTimeUpdate={handleTimeUpdate}
+        className="reel-native-video"
+      />
+
+      <div className="reel-gradient-overlay" aria-hidden="true" />
+
+      {/* Top overlay */}
+      <div className="reel-overlay-top">
+        <span className="reel-pill-number">REEL {reel.number}</span>
+        <button
+          type="button"
+          onClick={toggleSound}
+          className={`reel-sound-toggle ${!globalMuted ? 'is-active' : ''}`}
+          aria-label={globalMuted ? 'Unmute video audio' : 'Mute video audio'}
+        >
+          {globalMuted ? (
+            <>
+              <VolumeX size={13} />
+              <span>Tap for Audio</span>
+            </>
+          ) : (
+            <>
+              <Volume2 size={13} />
+              <span>Audio On</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Pause indicator */}
+      {!isPlaying && (
+        <div className="reel-center-play-indicator" aria-hidden="true">
+          <Play size={28} fill="currentColor" />
+        </div>
+      )}
+
+      {/* Bottom overlay */}
+      <div className="reel-overlay-bottom">
+        <div className="reel-progress-track">
+          <div className="reel-progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="reel-bottom-content">
+          <strong className="reel-video-title">{reel.title}</strong>
+          <a
+            href={reel.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="reel-insta-btn"
+            aria-label={`View Reel ${reel.number} on Instagram`}
+          >
+            Instagram <ArrowUpRight size={12} />
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [playingReel, setPlayingReel] = useState<string | null>(null)
-  const [showAllPlayers, setShowAllPlayers] = useState(false)
+  const [globalMuted, setGlobalMuted] = useState(true)
 
   return (
     <main id="top" className="site-shell">
@@ -135,15 +289,12 @@ export default function Page() {
           <div className="reels-header-actions">
             <button
               type="button"
-              onClick={() => {
-                setShowAllPlayers((prev) => !prev)
-                setPlayingReel(null)
-              }}
+              onClick={() => setGlobalMuted(!globalMuted)}
               className="reels-mode-toggle"
-              aria-label={showAllPlayers ? 'Switch to poster view' : 'Run all reels in room'}
+              aria-label={globalMuted ? 'Turn on sound for all reels' : 'Mute all reels'}
             >
-              <Play size={12} fill="currentColor" />
-              <span>{showAllPlayers ? 'Show Posters' : 'Run All Reels'}</span>
+              {globalMuted ? <Volume2 size={13} /> : <VolumeX size={13} />}
+              <span>{globalMuted ? 'Unmute Room' : 'Mute Room'}</span>
             </button>
             <a href="https://www.instagram.com/hearmeout.amd" target="_blank" rel="noopener noreferrer">
               See Instagram <ArrowUpRight size={14} />
@@ -152,95 +303,14 @@ export default function Page() {
         </div>
 
         <div className="reels-grid">
-          {reels.map((reel) => {
-            const isPlaying = showAllPlayers || playingReel === reel.number
-
-            if (isPlaying) {
-              return (
-                <div className={`reel-card reel-card-playing ${reel.tone}`} key={reel.number}>
-                  <div className="reel-playing-header">
-                    <span className="reel-number">REEL {reel.number}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (showAllPlayers) {
-                          setShowAllPlayers(false)
-                        }
-                        setPlayingReel(null)
-                      }}
-                      className="reel-close-button"
-                      aria-label="Close reel video"
-                    >
-                      <X size={15} />
-                    </button>
-                  </div>
-
-                  <div className="reel-video-container">
-                    <iframe
-                      src={`https://www.instagram.com/reel/${reel.id}/embed/`}
-                      className="reel-iframe"
-                      scrolling="no"
-                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                      allowFullScreen
-                      title={`Instagram Reel ${reel.number} - ${reel.title}`}
-                    />
-                  </div>
-
-                  <div className="reel-playing-footer">
-                    <span className="reel-audio-pill">
-                      <Volume2 size={13} /> Tap video to play/unmute
-                    </span>
-                    <a
-                      href={reel.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="reel-insta-badge"
-                    >
-                      Instagram <ArrowUpRight size={12} />
-                    </a>
-                  </div>
-                </div>
-              )
-            }
-
-            return (
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setPlayingReel(reel.number)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    setPlayingReel(reel.number)
-                  }
-                }}
-                className={`reel-card ${reel.tone}`}
-                key={reel.number}
-                aria-label={`Play Reel ${reel.number}: ${reel.title}`}
-              >
-                <div className="reel-top-row">
-                  <span className="reel-number">REEL {reel.number}</span>
-                  <span className="reel-badge-pill">
-                    <Volume2 size={11} /> Audio on
-                  </span>
-                </div>
-
-                <div className="play-button-wrapper">
-                  <span className="play-button">
-                    <Play size={20} fill="currentColor" />
-                  </span>
-                  <span className="play-callout">Play with audio</span>
-                </div>
-
-                <div className="reel-bottom-row">
-                  <strong>{reel.title}</strong>
-                  <span className="reel-arrow">
-                    <Play size={14} fill="currentColor" />
-                  </span>
-                </div>
-              </div>
-            )
-          })}
+          {reels.map((reel) => (
+            <ReelVideoCard
+              key={reel.number}
+              reel={reel}
+              globalMuted={globalMuted}
+              setGlobalMuted={setGlobalMuted}
+            />
+          ))}
         </div>
       </section>
 
