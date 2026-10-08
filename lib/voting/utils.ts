@@ -1,4 +1,4 @@
-export type VoteChoice = 'YES' | 'NO'
+export type VoteChoice = string
 
 export interface VoteRecord {
   id: string
@@ -11,9 +11,16 @@ export interface VoteRecord {
 }
 
 export interface VoteTally {
+  // Generic labels
+  option1Count: number
+  option2Count: number
+  option1Percent: number
+  option2Percent: number
+  total: number
+
+  // Backward compatibility for M4
   yes: number
   no: number
-  total: number
   yesPercent: number
   noPercent: number
 }
@@ -57,31 +64,44 @@ function capitalize(word: string): string {
 }
 
 /**
- * Calculates current counts and rounded percentages.
+ * Calculates current counts and rounded percentages for any two options.
+ * Defaults to 'YES' and 'NO' for M4 backward compatibility.
  */
-export function calculateTally(votes: Array<{ choice: VoteChoice }>): VoteTally {
+export function calculateTally(
+  votes: Array<{ choice: string }>,
+  option1Key: string = 'YES',
+  option2Key: string = 'NO'
+): VoteTally {
   const total = votes.length
   if (total === 0) {
     return {
+      option1Count: 0,
+      option2Count: 0,
+      option1Percent: 0,
+      option2Percent: 0,
+      total: 0,
       yes: 0,
       no: 0,
-      total: 0,
       yesPercent: 0,
       noPercent: 0,
     }
   }
 
-  const yes = votes.filter((v) => v.choice === 'YES').length
-  const no = total - yes
+  const opt1Count = votes.filter((v) => v.choice === option1Key).length
+  const opt2Count = total - opt1Count
 
-  const yesPercent = Math.round((yes / total) * 100)
-  const noPercent = 100 - yesPercent
+  const opt1Percent = Math.round((opt1Count / total) * 100)
+  const opt2Percent = 100 - opt1Percent
 
   return {
-    yes,
-    no,
+    option1Count: opt1Count,
+    option2Count: opt2Count,
+    option1Percent: opt1Percent,
+    option2Percent: opt2Percent,
     total,
-    yesPercent,
-    noPercent,
+    yes: opt1Count,
+    no: opt2Count,
+    yesPercent: opt1Percent,
+    noPercent: opt2Percent,
   }
 }

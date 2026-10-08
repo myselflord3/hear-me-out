@@ -36,10 +36,13 @@ const reels: ReelItem[] = [
 ]
 
 const archive = [
-  { number: 'M01', title: 'Expensive Things Are Genuinely Better?', date: '8th August' },
-  { number: 'M02', title: 'Social Media Made Us Perform Our lives Instead Of Live Them?', date: '22nd August' },
+  { number: 'M05', title: 'Hear Me Out: Movie or Experience?', date: '10th October' },
+  { number: 'M04', title: 'Does celebrity worship have gone too far?', date: '19th September' },
   { number: 'M03', title: 'Are Teachers Necessary In The Age Of AI?', date: '5th September' },
+  { number: 'M02', title: 'Social Media Made Us Perform Our lives Instead Of Live Them?', date: '22nd August' },
+  { number: 'M01', title: 'Expensive Things Are Genuinely Better?', date: '8th August' },
 ]
+
 
 function BrandMark() {
   return (
@@ -193,13 +196,13 @@ export default function Page() {
       <header className="site-header">
         <BrandMark />
         <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="Main navigation">
-          <a href="#m04" onClick={() => setMenuOpen(false)}>M04</a>
+          <a href="#m05" onClick={() => setMenuOpen(false)}>M05</a>
           <a href="#why" onClick={() => setMenuOpen(false)}>Why we meet</a>
           <a href="#archive" onClick={() => setMenuOpen(false)}>Archive</a>
           <a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a>
         </nav>
         <div className="header-actions">
-          <a href="https://forms.gle/MAJu4Vu56B6CVaer6" target="_blank" rel="noopener noreferrer" className="button button-small button-black">Register <ArrowUpRight size={15} /></a>
+          <a href="https://forms.gle/3D4WoZGUKayn6exZ6" target="_blank" rel="noopener noreferrer" className="button button-small button-black">Register <ArrowUpRight size={15} /></a>
           <button className="menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -211,7 +214,7 @@ export default function Page() {
           <p className="eyebrow"><CircleDot size={12} fill="currentColor" /> An Ahmedabad community for curious people</p>
           <h1>Say it<br /><span>out</span><i>.</i></h1>
           <p className="hero-intro">A room for ideas, opinions, and the conversations we usually keep in our heads.</p>
-          <a href="#m04" className="button button-red">See what&apos;s next <ArrowDown size={18} /></a>
+          <a href="#m05" className="button button-red">See what&apos;s next <ArrowDown size={18} /></a>
         </div>
         <div className="hero-poster" aria-label="A typographic poster for the Hear Me Out community">
           <div className="poster-sticker">NO<br />SMALL<br />TALK</div>
@@ -219,35 +222,48 @@ export default function Page() {
           <div className="poster-doodle">✳</div>
           <p className="poster-caption">come with a point.<br />leave with a question.</p>
         </div>
-        <div className="hero-note">Vol. 04 <span>•</span> Ahmedabad, India</div>
+        <div className="hero-note">Vol. 05 <span>•</span> Ahmedabad, India</div>
       </section>
 
       <section className="marquee" aria-label="Community statement">
         <div className="marquee-track">NO HOT TAKES WITHOUT A LITTLE HEART <span>✳</span> NO HOT TAKES WITHOUT A LITTLE HEART <span>✳</span></div>
       </section>
 
-      <section id="m04" className="event-section section-pad">
-        <div className="section-label"><span>01</span><span>Next up</span></div>
+      <section id="m05" className="event-section section-pad">
+        <div className="section-label"><span>01</span><span>The Next Motion</span></div>
         <div className="event-grid">
           <div>
-            <p className="eyebrow red-text">M04 / REGISTRATIONS OPEN</p>
-            <h2>Bring your<br /><em>biggest</em><br />opinion.</h2>
+            <p className="eyebrow red-text">M05 / REGISTRATIONS OPEN</p>
+            <h2>Hear Me Out:<br /><em>Movie or</em><br />Experience?</h2>
           </div>
           <div className="event-details">
-            <p className="event-description">The next HEAR. ME. OUT. is taking shape. One motion, two sides, one room where changing your mind is allowed.</p>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.35rem, 2.3vw, 2.1rem)', lineHeight: 0.95, textTransform: 'uppercase', margin: '0 0 1.2rem', letterSpacing: '-0.03em' }}>
+              What matters more, a great movie or a great experience?
+            </h3>
+            <p className="event-description" style={{ fontSize: '0.98rem', lineHeight: '1.45', marginBottom: '1.2rem' }}>
+              &ldquo;This time, we’re putting the film vs the way we experience it head-to-head, from OTT and theatres to storytelling, big screens, attention spans, and everything in between.
+            </p>
+            <p className="event-description" style={{ fontSize: '0.92rem', lineHeight: '1.45', opacity: 0.85, marginBottom: '1.2rem' }}>
+              Expect our usual rapid fires, situation rounds, rebuttals and audience challenges, plus the Imposter Game, where not everyone is who they claim to be.
+            </p>
+            <p style={{ fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '1.8rem', color: 'var(--red)' }}>
+              Come with an opinion. Pick a side. Hear them out.&rdquo;
+            </p>
             <div className="detail-list">
-              <div><span>WHEN</span><strong>19 September</strong></div>
+              <div><span>WHEN</span><strong>10 October, 2026</strong></div>
+              <div><span>TIME</span><strong>5–7 PM</strong></div>
               <div>
                 <span>WHERE</span>
                 <strong>
                   <a href="https://maps.app.goo.gl/FfU7cUoVTsCa2y3f7" target="_blank" rel="noopener noreferrer" className="location-link">
-                    Monkey Cafe <ArrowUpRight size={13} />
+                    Monkey Cafe, Drive-in Cinema <ArrowUpRight size={13} />
                   </a>
                 </strong>
               </div>
-              <div><span>FORMAT</span><strong>Live discussion + audience vote</strong></div>
+              <div><span>TICKET</span><strong>₹99/-</strong></div>
+              <div><span>FORMAT</span><strong>Live debate + audience vote</strong></div>
             </div>
-            <a href="https://forms.gle/MAJu4Vu56B6CVaer6" target="_blank" rel="noopener noreferrer" className="button button-black">Register for M04 <ArrowUpRight size={17} /></a>
+            <a href="https://forms.gle/3D4WoZGUKayn6exZ6" target="_blank" rel="noopener noreferrer" className="button button-black">I&apos;M COMING <ArrowUpRight size={17} /></a>
             <p className="microcopy">Registrations are now open. Reserve your seat today.</p>
           </div>
         </div>

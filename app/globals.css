@@ -364,6 +364,37 @@ button { font: inherit; }
   display: inline-block;
 }
 
+.title-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin: 0.85rem 0;
+  max-width: 640px;
+}
+
+.or-pill {
+  background: var(--ink);
+  color: var(--yellow);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4.5vw, 3.2rem);
+  padding: 0.35rem 2rem;
+  letter-spacing: 0.08em;
+  transform: rotate(-3deg);
+  box-shadow: 5px 5px 0 var(--red);
+  line-height: 1;
+  text-shadow: none;
+  font-style: normal;
+  border: 3px solid var(--ink);
+  display: inline-block;
+  user-select: none;
+}
+
+.or-line {
+  flex: 1;
+  height: 4px;
+  background: var(--ink);
+}
+
 .motion-subtitle {
   font-size: clamp(0.95rem, 1.8vw, 1.25rem);
   font-weight: 700;

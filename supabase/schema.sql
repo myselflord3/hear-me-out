@@ -1,5 +1,5 @@
 -- ==============================================================================
--- HEAR. ME. OUT. — MOTION 04 LIVE AUDIENCE VOTING SCHEMA
+-- HEAR. ME. OUT. — MOTIONS DATABASE SCHEMA
 -- Database: Supabase (PostgreSQL)
 -- ==============================================================================
 
@@ -13,13 +13,25 @@ create table if not exists public.motions (
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Seed Motion 04
+-- Seed Motion 04 (Completed / Closed)
 insert into public.motions (id, title, option_yes, option_no, status)
 values (
     'm4',
     'DOES CELEBRITY WORSHIP HAVE GONE TOO FAR?',
     'YES. WE''VE TAKEN IT TOO FAR 😮💨',
     'NO. LET PEOPLE ENJOY WHAT THEY ENJOY!',
+    'closed'
+)
+on conflict (id) do update set
+    status = 'closed';
+
+-- Seed Motion 05 (Active / Upcoming)
+insert into public.motions (id, title, option_yes, option_no, status)
+values (
+    'm5',
+    'WHAT MATTERS MORE, A GREAT MOVIE OR A GREAT EXPERIENCE?',
+    'A brilliant movie, terrible viewing experience',
+    'An incredible viewing experience, average movie',
     'open'
 )
 on conflict (id) do update set
@@ -33,13 +45,16 @@ create table if not exists public.votes (
     motion_id text not null references public.motions(id) on delete cascade,
     user_id uuid not null,
     display_name text not null, -- Anonymized format: "Firstname L."
-    choice text not null check (choice in ('YES', 'NO')),
+    choice text not null,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
     
     -- CRITICAL ANTI-SPAM CONSTRAINT: One account = Exactly one active vote per motion
     constraint unique_motion_user unique (motion_id, user_id)
 );
+
+-- Ensure choice column allows flexible options beyond binary YES/NO (e.g. MOVIE, EXPERIENCE)
+alter table public.votes drop constraint if exists votes_choice_check;
 
 -- Index for speedy queries by motion and choice
 create index if not exists idx_votes_motion_id on public.votes(motion_id);

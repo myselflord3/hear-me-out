@@ -3,12 +3,12 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'HEAR. ME. OUT. — Ahmedabad talks out loud',
-  description: 'A room for ideas, opinions, and the conversations we usually keep in our heads.',
+  title: 'Here Me Out — Movie or Experience?',
+  description: "Here Me Out: Movie or Experience? Join Ahmedabad's community debate on what matters more — a great movie or a great experience.",
   generator: 'v0.app',
   openGraph: {
-    title: 'HEAR. ME. OUT.',
-    description: 'No hot takes without a little heart.',
+    title: 'Here Me Out — Movie or Experience?',
+    description: "What matters more, a great movie or a great experience? Live at Monkey Cafe, Drive-in Cinema on 10 October 2026.",
     type: 'website',
   },
   icons: {
