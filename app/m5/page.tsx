@@ -577,7 +577,7 @@ export default function Motion05LiveVotingPage() {
           </h1>
 
           <p className="motion-subtitle">
-            If you could choose one. One authenticated vote per person. Change your mind anytime.
+            <em>One authenticated vote per person. Change your mind anytime.</em>
           </p>
         </section>
 
@@ -601,7 +601,7 @@ export default function Motion05LiveVotingPage() {
           {/* Prompt / Microcopy */}
           <div className="action-instruction-row">
             <div className="instruction-heading">
-              <span className="instruction-lead">IF YOU COULD CHOOSE ONE</span>
+              <span className="instruction-lead">IF YOU COULD CHOOSE ONE?</span>
             </div>
 
             <div className="microcopy-badge">

@@ -240,14 +240,8 @@ export default function Page() {
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.35rem, 2.3vw, 2.1rem)', lineHeight: 0.95, textTransform: 'uppercase', margin: '0 0 1.2rem', letterSpacing: '-0.03em' }}>
               What matters more, a great movie or a great experience?
             </h3>
-            <p className="event-description" style={{ fontSize: '0.98rem', lineHeight: '1.45', marginBottom: '1.2rem' }}>
-              &ldquo;This time, we’re putting the film vs the way we experience it head-to-head, from OTT and theatres to storytelling, big screens, attention spans, and everything in between.
-            </p>
-            <p className="event-description" style={{ fontSize: '0.92rem', lineHeight: '1.45', opacity: 0.85, marginBottom: '1.2rem' }}>
-              Expect our usual rapid fires, situation rounds, rebuttals and audience challenges, plus the Imposter Game, where not everyone is who they claim to be.
-            </p>
             <p style={{ fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '1.8rem', color: 'var(--red)' }}>
-              Come with an opinion. Pick a side. Hear them out.&rdquo;
+              Come with an opinion. Pick a side. Hear them out.
             </p>
             <div className="detail-list">
               <div><span>WHEN</span><strong>10 October, 2026</strong></div>

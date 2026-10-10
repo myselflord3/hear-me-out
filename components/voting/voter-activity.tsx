@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { VoteRecord } from '@/lib/voting/utils'
-import { Activity, ShieldCheck } from 'lucide-react'
+import { Activity } from 'lucide-react'
 
 interface VoterActivityProps {
   recentVotes: VoteRecord[]
@@ -28,10 +28,6 @@ export function VoterActivity({
         <div className="activity-title-group">
           <Activity size={13} className="activity-icon" />
           <span className="activity-heading">{heading}</span>
-        </div>
-        <div className="activity-privacy-note">
-          <ShieldCheck size={12} />
-          <span>Names anonymized</span>
         </div>
       </div>
 
