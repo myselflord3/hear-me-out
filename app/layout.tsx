@@ -3,12 +3,12 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Hear Me Out — We Are All Evil | Halloween Special M06',
+  title: 'Hear Me Out - We Are All Evil | Halloween Special M06',
   description:
     "Hear Me Out presents We Are All Evil 🎭 Halloween Special. One expert, one battle of morals, one game of deception on 31 October 2026 at Monkey Cafe, Ahmedabad.",
   generator: 'v0.app',
   openGraph: {
-    title: 'Hear Me Out — We Are All Evil (M06 Halloween Special)',
+    title: 'Hear Me Out - We Are All Evil (M06 Halloween Special)',
     description:
       'How good are you when no one is watching? An expert exploration with Dr. Harshil Vyas, a live moral debate, and a psychological Mafia game on 31 October 2026 at Monkey Cafe, Ahmedabad.',
     type: 'website',

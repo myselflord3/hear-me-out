@@ -22,8 +22,8 @@ insert into public.motions (id, title, option_yes, option_no, status)
 values (
     'm6',
     'WE ARE ALL EVIL: ARE WE MORAL BY NATURE OR BY SOCIAL FEAR?',
-    'GOOD BY NATURE — Morality and empathy are who we truly are',
-    'WE ARE ALL EVIL — Society & fear of consequences are all that keep us in check',
+    'GOOD BY NATURE - Morality and empathy are who we truly are',
+    'WE ARE ALL EVIL - Society & fear of consequences are all that keep us in check',
     'open'
 )
 on conflict (id) do update set

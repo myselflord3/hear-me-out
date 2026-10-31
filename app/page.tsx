@@ -319,7 +319,7 @@ export default function Page() {
             </p>
             <div className="detail-list">
               <div><span>WHEN</span><strong>31 October, 2026 (Halloween)</strong></div>
-              <div><span>TIME</span><strong>5:00 PM – 7:00 PM</strong></div>
+              <div><span>TIME</span><strong>5:00 PM - 7:00 PM</strong></div>
               <div>
                 <span>WHERE</span>
                 <strong>
@@ -352,7 +352,7 @@ export default function Page() {
         <div className="why-grid">
           <h2>Because<br /><span>thinking</span><br />is better<br />out loud.</h2>
           <div className="why-copy">
-            <p>HEAR. ME. OUT. is a recurring live conversation series for people who are not afraid of a strong opinion — or a better one.</p>
+            <p>HEAR. ME. OUT. is a recurring live conversation series for people who are not afraid of a strong opinion - or a better one.</p>
             <p>No panels. No experts on a stage. Just a prompt, a room, and the permission to be unfinished.</p>
             <div className="manifesto"><span>01</span><strong>Arrive curious.</strong><span>02</span><strong>Say the thing.</strong><span>03</span><strong>Listen for the plot twist.</strong></div>
           </div>

@@ -287,7 +287,7 @@ export default function Motion04LiveVotingPage() {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem', color: 'var(--yellow)' }}>
               <Lock size={20} />
               <strong style={{ fontSize: '1.25rem', letterSpacing: '-0.02em', textTransform: 'uppercase', fontFamily: 'var(--font-display)' }}>
-                VOTING CLOSED — THE DEBATE HAS ENDED
+                VOTING CLOSED - THE DEBATE HAS ENDED
               </strong>
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9, lineHeight: 1.4, fontWeight: 500, textTransform: 'none' }}>
@@ -319,7 +319,7 @@ export default function Motion04LiveVotingPage() {
         <footer className="event-stage-footer">
           <div className="footer-notes">
             <p>
-              <strong>HEAR. ME. OUT. M04 ARCHIVE</strong> — Permanent event record from 19 September at Monkey Cafe.
+              <strong>HEAR. ME. OUT. M04 ARCHIVE</strong> - Permanent event record from 19 September at Monkey Cafe.
               All {allVotes.length} authentic votes are preserved from the live event.
             </p>
           </div>

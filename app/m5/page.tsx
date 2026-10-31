@@ -509,7 +509,7 @@ export default function Motion05LiveVotingPage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem' }}>
             <span style={{ fontSize: '1.1rem' }}>🎭</span>
             <span>
-              <strong>NEXT MOTION (M06):</strong> Halloween Special: We Are All Evil (31 Oct • Monkey Cafe • 5–7 PM)
+              <strong>NEXT MOTION (M06):</strong> Halloween Special: We Are All Evil (31 Oct • Monkey Cafe • 5-7 PM)
             </span>
           </div>
           <Link
@@ -585,7 +585,7 @@ export default function Motion05LiveVotingPage() {
           {motionStatus === 'closed' && (
             <div className="status-announcement-banner closed">
               <Lock size={16} />
-              <span>VOTING IS NOW CLOSED — FINAL RESULTS ARE LOCKED</span>
+              <span>VOTING IS NOW CLOSED - FINAL RESULTS ARE LOCKED</span>
             </div>
           )}
 
@@ -777,7 +777,7 @@ export default function Motion05LiveVotingPage() {
         <footer className="event-stage-footer">
           <div className="footer-notes">
             <p>
-              <strong>HEAR. ME. OUT. M05 LIVE BALLOT</strong> — Verified room participation.
+              <strong>HEAR. ME. OUT. M05 LIVE BALLOT</strong> - Verified room participation.
               One authenticated vote per attendee. Results broadcast directly from the PostgreSQL instance.
             </p>
           </div>

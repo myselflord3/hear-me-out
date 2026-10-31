@@ -44,7 +44,7 @@ export function VoterActivity({
           return (
             <div key={vote.id || `${vote.display_name}-${vote.updated_at}`} className="activity-chip">
               <span className="voter-name">{vote.display_name}</span>
-              <span className="voter-divider">—</span>
+              <span className="voter-divider">-</span>
               <span className={`voter-choice ${isPrimary ? 'choice-chip-yes' : 'choice-chip-no'}`}>
                 {displayChoice}
               </span>

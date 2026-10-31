@@ -33,8 +33,8 @@ import { SVOExperiment } from '@/components/voting/svo-experiment'
 const OPTION_1_KEY = 'MORAL'
 const OPTION_2_KEY = 'EVIL'
 
-const OPTION_1_LABEL = 'GOOD BY NATURE — Morality and empathy are who we truly are'
-const OPTION_2_LABEL = 'WE ARE ALL EVIL — Society & fear of consequences are all that keep us in check'
+const OPTION_1_LABEL = 'GOOD BY NATURE - Morality and empathy are who we truly are'
+const OPTION_2_LABEL = 'WE ARE ALL EVIL - Society & fear of consequences are all that keep us in check'
 
 const CHOICE_DISPLAY_LABELS: Record<string, string> = {
   [OPTION_1_KEY]: 'GOOD BY NATURE',
@@ -550,7 +550,7 @@ export default function Motion06HalloweenVotingPage() {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem' }}>
             <span style={{ fontSize: '1.25rem' }}>🎃</span>
             <span>
-              <strong>31 OCT • MONKEY CAFE:</strong> Hear Me Out: We Are All Evil (5–7 PM • ₹349/-)
+              <strong>31 OCT • MONKEY CAFE:</strong> Hear Me Out: We Are All Evil (5-7 PM • ₹349/-)
             </span>
           </div>
           <a
@@ -631,7 +631,7 @@ export default function Motion06HalloweenVotingPage() {
               {motionStatus === 'closed' && (
                 <div className="status-announcement-banner closed">
                   <Lock size={16} />
-                  <span>VOTING IS NOW CLOSED — FINAL TRIBUNAL RESULTS ARE LOCKED</span>
+                  <span>VOTING IS NOW CLOSED - FINAL TRIBUNAL RESULTS ARE LOCKED</span>
                 </div>
               )}
 
@@ -836,7 +836,7 @@ export default function Motion06HalloweenVotingPage() {
         <footer className="event-stage-footer">
           <div className="footer-notes">
             <p>
-              <strong>HEAR. ME. OUT. M06 HALLOWEEN SPECIAL</strong> — Verified room participation.
+              <strong>HEAR. ME. OUT. M06 HALLOWEEN SPECIAL</strong> - Verified room participation.
               One authenticated vote per attendee. Results broadcast live directly from the PostgreSQL instance.
             </p>
           </div>
