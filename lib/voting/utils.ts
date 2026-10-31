@@ -87,7 +87,12 @@ export function calculateTally(
     }
   }
 
-  const opt1Count = votes.filter((v) => v.choice === option1Key).length
+  const opt1Count = votes.filter(
+    (v) =>
+      v.choice === option1Key ||
+      (option1Key === 'MORAL' && (v.choice === 'GOOD' || v.choice === 'YES')) ||
+      (option1Key === 'MOVIE' && v.choice === 'YES')
+  ).length
   const opt2Count = total - opt1Count
 
   const opt1Percent = Math.round((opt1Count / total) * 100)

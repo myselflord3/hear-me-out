@@ -507,26 +507,24 @@ export default function Motion05LiveVotingPage() {
           }}
         >
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.65rem' }}>
-            <Film size={15} style={{ color: 'var(--yellow)' }} />
+            <span style={{ fontSize: '1.1rem' }}>🎭</span>
             <span>
-              <strong>10 OCT • MONKEY CAFE:</strong> Hear Me Out: Movie or Experience? (5–7 PM • ₹99/-)
+              <strong>NEXT MOTION (M06):</strong> Halloween Special: We Are All Evil (31 Oct • Monkey Cafe • 5–7 PM)
             </span>
           </div>
-          <a
-            href="https://forms.gle/3D4WoZGUKayn6exZ6"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/m6"
             className="button button-small"
             style={{
-              background: 'var(--yellow)',
-              color: 'var(--ink)',
+              background: 'var(--red)',
+              color: 'var(--cream)',
               padding: '0.4rem 0.8rem',
               fontSize: '0.72rem',
               fontWeight: 900,
             }}
           >
-            GET YOUR TICKET <ArrowUpRight size={13} />
-          </a>
+            GO TO M06 LIVE BALLOT <ArrowUpRight size={13} />
+          </Link>
         </div>
 
         {/* Database Unreachable Notice banner if Supabase project is paused */}

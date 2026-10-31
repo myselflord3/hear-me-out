@@ -3,30 +3,32 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Here Me Out — Movie or Experience?',
-  description: "Here Me Out: Movie or Experience? Join Ahmedabad's community debate on what matters more — a great movie or a great experience.",
+  title: 'Hear Me Out — We Are All Evil | Halloween Special M06',
+  description:
+    "Hear Me Out presents We Are All Evil 🎭 Halloween Special. One expert, one battle of morals, one game of deception on 31 October 2026 at Monkey Cafe, Ahmedabad.",
   generator: 'v0.app',
   openGraph: {
-    title: 'Here Me Out — Movie or Experience?',
-    description: "What matters more, a great movie or a great experience? Live at Monkey Cafe, Drive-in Cinema on 10 October 2026.",
+    title: 'Hear Me Out — We Are All Evil (M06 Halloween Special)',
+    description:
+      'How good are you when no one is watching? An expert exploration with Dr. Harshil Vyas, a live moral debate, and a psychological Mafia game on 31 October 2026 at Monkey Cafe, Ahmedabad.',
     type: 'website',
   },
   icons: {
-    icon: '/icon.svg',
-    apple: '/apple-icon.png',
+    icon: [{ url: '/icon.svg?v=2', type: 'image/svg+xml' }],
+    apple: '/icon.svg?v=2',
   },
 }
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#f4c430',
+  themeColor: '#e4472e',
   userScalable: false,
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

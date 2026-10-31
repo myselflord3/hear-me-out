@@ -34,7 +34,12 @@ export function VoterActivity({
       <div className="activity-stream">
         {displayList.map((vote) => {
           const displayChoice = choiceLabels[vote.choice] || vote.choice
-          const isPrimary = vote.choice === 'YES' || vote.choice === 'OPTION_1' || vote.choice === 'MOVIE'
+          const isPrimary =
+            vote.choice === 'YES' ||
+            vote.choice === 'OPTION_1' ||
+            vote.choice === 'MOVIE' ||
+            vote.choice === 'MORAL' ||
+            vote.choice === 'GOOD'
 
           return (
             <div key={vote.id || `${vote.display_name}-${vote.updated_at}`} className="activity-chip">

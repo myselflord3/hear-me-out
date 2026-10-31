@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowDown, ArrowUpRight, CircleDot, Menu, Pause, Play, Volume2, VolumeX, X } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, CircleDot, Menu, Play, Volume2, VolumeX, X } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 interface ReelItem {
@@ -36,8 +37,8 @@ const reels: ReelItem[] = [
 ]
 
 const archive = [
-  { number: 'M05', title: 'Hear Me Out: Movie or Experience?', date: '10th October' },
-  { number: 'M04', title: 'Does celebrity worship have gone too far?', date: '19th September' },
+  { number: 'M05', title: 'Hear Me Out: Movie or Experience?', date: '10th October', href: '/m5' },
+  { number: 'M04', title: 'Does celebrity worship have gone too far?', date: '19th September', href: '/m4' },
   { number: 'M03', title: 'Are Teachers Necessary In The Age Of AI?', date: '5th September' },
   { number: 'M02', title: 'Social Media Made Us Perform Our lives Instead Of Live Them?', date: '22nd August' },
   { number: 'M01', title: 'Expensive Things Are Genuinely Better?', date: '8th August' },
@@ -190,19 +191,39 @@ export default function Page() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeAudioReel, setActiveAudioReel] = useState<string | null>(null)
 
+  // Catch OAuth callback redirect if Supabase falls back to root with ?code= or #access_token
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    const returnTo = localStorage.getItem('hmo_auth_return_to') || '/m6'
+    
+    if (code) {
+      localStorage.removeItem('hmo_auth_return_to')
+      window.location.replace(`/auth/callback?code=${encodeURIComponent(code)}&next=${encodeURIComponent(returnTo)}`)
+      return
+    }
+
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      localStorage.removeItem('hmo_auth_return_to')
+      window.location.replace(`${returnTo}${window.location.hash}`)
+    }
+  }, [])
+
   return (
     <main id="top" className="site-shell">
       <div className="grain" aria-hidden="true" />
       <header className="site-header">
         <BrandMark />
         <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="Main navigation">
-          <a href="#m05" onClick={() => setMenuOpen(false)}>M05</a>
+          <a href="#m06" onClick={() => setMenuOpen(false)}>M06</a>
+          <Link href="/m6" onClick={() => setMenuOpen(false)}>Live Vote</Link>
           <a href="#why" onClick={() => setMenuOpen(false)}>Why we meet</a>
           <a href="#archive" onClick={() => setMenuOpen(false)}>Archive</a>
           <a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a>
         </nav>
         <div className="header-actions">
-          <a href="https://forms.gle/3D4WoZGUKayn6exZ6" target="_blank" rel="noopener noreferrer" className="button button-small button-black">Register <ArrowUpRight size={15} /></a>
+          <a href="https://forms.gle/KGG9pDwU8Vh5Xwmw6" target="_blank" rel="noopener noreferrer" className="button button-small button-black">Register <ArrowUpRight size={15} /></a>
           <button className="menu-button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -211,54 +232,111 @@ export default function Page() {
 
       <section className="hero section-pad">
         <div className="hero-copy">
-          <p className="eyebrow"><CircleDot size={12} fill="currentColor" /> An Ahmedabad community for curious people</p>
+          <p className="eyebrow"><CircleDot size={12} fill="currentColor" /> An Ahmedabad community for curious people • 🎭 HALLOWEEN SPECIAL</p>
           <h1>Say it<br /><span>out</span><i>.</i></h1>
-          <p className="hero-intro">A room for ideas, opinions, and the conversations we usually keep in our heads.</p>
-          <a href="#m05" className="button button-red">See what&apos;s next <ArrowDown size={18} /></a>
+          <p className="hero-intro">A room for ideas, opinions, and the conversations we usually keep in our heads. This Halloween, we dive into the darker corners of human psychology.🕯️</p>
+          <a href="#m06" className="button button-red">See what&apos;s next <ArrowDown size={18} /></a>
         </div>
         <div className="hero-poster" aria-label="A typographic poster for the Hear Me Out community">
-          <div className="poster-sticker">NO<br />SMALL<br />TALK</div>
+          <div className="poster-sticker">WE<br />ARE<br />EVIL</div>
           <div className="poster-word">HEAR<br /><span>ME</span><br />OUT</div>
-          <div className="poster-doodle">✳</div>
-          <p className="poster-caption">come with a point.<br />leave with a question.</p>
+          <div className="poster-doodle">🎭</div>
+          <p className="poster-caption">come with a point.<br />leave questioning yourself.</p>
         </div>
-        <div className="hero-note">Vol. 05 <span>•</span> Ahmedabad, India</div>
+        <div className="hero-note">Vol. 06 <span>•</span> Halloween Special <span>•</span> Ahmedabad, India</div>
       </section>
 
       <section className="marquee" aria-label="Community statement">
-        <div className="marquee-track">NO HOT TAKES WITHOUT A LITTLE HEART <span>✳</span> NO HOT TAKES WITHOUT A LITTLE HEART <span>✳</span></div>
+        <div className="marquee-track">HEAR ME OUT PRESENTS WE ARE ALL EVIL <span>🕯️</span> DISCUSS • DEBATE • DISAGREE <span>🎭</span> ONE EXPERT • ONE BATTLE OF MORALS • ONE GAME OF DECEPTION <span>🥀</span> HALLOWEEN SPECIAL <span>✳</span></div>
       </section>
 
-      <section id="m05" className="event-section section-pad">
-        <div className="section-label"><span>01</span><span>The Next Motion</span></div>
+      <section id="m06" className="event-section section-pad">
+        <div className="section-label"><span>01</span><span>The Next Motion • M06</span></div>
         <div className="event-grid">
           <div>
-            <p className="eyebrow red-text">M05 / REGISTRATIONS OPEN</p>
-            <h2>Hear Me Out:<br /><em>Movie or</em><br />Experience?</h2>
+            <p className="eyebrow red-text">M06 / 🎭 HALLOWEEN SPECIAL / REGISTRATIONS OPEN</p>
+            <h2>Hear Me Out:<br /><em>We Are All</em><br />Evil.</h2>
+
+            <div style={{ margin: '1.5rem 0 1rem', maxWidth: '440px' }}>
+              <p style={{ fontSize: '1rem', lineHeight: 1.4, fontWeight: 800, margin: '0 0 0.5rem' }}>
+                Why does safe fear excite us? What does our true crime fascination reveal about who we really are?
+              </p>
+              <p style={{ fontSize: '0.84rem', lineHeight: 1.45, opacity: 0.85, margin: 0 }}>
+                How good are you when nobody is watching? One expert. One battle of morals. One game of deception.🥀
+              </p>
+            </div>
+
+            {/* The 3 Acts */}
+            <div className="acts-grid-wrapper">
+              <div className="act-card-item">
+                <div className="act-card-top">
+                  <span className="act-number-tag">01 / THE UNMASKING 🕯️</span>
+                  <span className="act-badge-pill">🧠 The Lecture</span>
+                </div>
+                <strong className="act-speaker-badge">Dr. Harshil Vyas • IIT Research Consultant</strong>
+                <p className="act-desc-text">
+                  Why fear excites us, why true crime draws us in, and what disturbing curiosity reveals about our character.
+                </p>
+                <Link href="/m6?tab=svo" style={{ fontSize: '0.72rem', fontWeight: 900, color: 'var(--red)', marginTop: '0.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  Take Dr. Harshil&apos;s SVO Test (Pre &amp; Post) →
+                </Link>
+              </div>
+
+              <div className="act-card-item">
+                <div className="act-card-top">
+                  <span className="act-number-tag">02 / MORAL TRIBUNAL ⚖️</span>
+                  <span className="act-badge-pill">⚔️ The Debate</span>
+                </div>
+                <p className="act-desc-text">
+                  A live debate: Does curiosity reveal character? Are we good by morals, or only because society punishes us when we&apos;re not?
+                </p>
+              </div>
+
+              <div className="act-card-item">
+                <div className="act-card-top">
+                  <span className="act-number-tag">03 / THE IMPOSTER 🎭</span>
+                  <span className="act-badge-pill">🕵️ The Mafia Game</span>
+                </div>
+                <p className="act-desc-text">
+                  A psychological game of deception where trust costs everything. Hidden identities, questionable intentions, zero safe bets.
+                </p>
+              </div>
+            </div>
           </div>
+
           <div className="event-details">
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.35rem, 2.3vw, 2.1rem)', lineHeight: 0.95, textTransform: 'uppercase', margin: '0 0 1.2rem', letterSpacing: '-0.03em' }}>
-              What matters more, a great movie or a great experience?
+              Think you know yourself? Let&apos;s put that to the test.
             </h3>
             <p style={{ fontWeight: 800, fontSize: '0.82rem', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '1.8rem', color: 'var(--red)' }}>
-              Come with an opinion. Pick a side. Hear them out.
+              LIMITED SEATS. UNCOMFORTABLE QUESTIONS. COME CURIOUS. LEAVE QUESTIONING YOURSELF.
             </p>
             <div className="detail-list">
-              <div><span>WHEN</span><strong>10 October, 2026</strong></div>
-              <div><span>TIME</span><strong>5–7 PM</strong></div>
+              <div><span>WHEN</span><strong>31 October, 2026 (Halloween)</strong></div>
+              <div><span>TIME</span><strong>5:00 PM – 7:00 PM</strong></div>
               <div>
                 <span>WHERE</span>
                 <strong>
                   <a href="https://maps.app.goo.gl/FfU7cUoVTsCa2y3f7" target="_blank" rel="noopener noreferrer" className="location-link">
-                    Monkey Cafe, Drive-in Cinema <ArrowUpRight size={13} />
+                    Monkey Cafe, Drive-in Road, Ahmedabad <ArrowUpRight size={13} />
                   </a>
                 </strong>
               </div>
-              <div><span>TICKET</span><strong>₹99/-</strong></div>
-              <div><span>FORMAT</span><strong>Live debate + audience vote</strong></div>
+              <div><span>TICKET</span><strong>₹349/- (Includes Lecture, Debate, Game, Cafe F&amp;B, &amp; Goodies)</strong></div>
+              <div><span>FORMAT</span><strong>Expert Lecture + Moral Tribunal + Mafia Game + Live Ballot</strong></div>
             </div>
-            <a href="https://forms.gle/3D4WoZGUKayn6exZ6" target="_blank" rel="noopener noreferrer" className="button button-black">I&apos;M COMING <ArrowUpRight size={17} /></a>
-            <p className="microcopy">Registrations are now open. Reserve your seat today.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <a href="https://forms.gle/KGG9pDwU8Vh5Xwmw6" target="_blank" rel="noopener noreferrer" className="button button-red" style={{ width: '100%' }}>
+                REGISTER NOW <ArrowUpRight size={17} />
+              </a>
+              <Link href="/m6" className="button button-black" style={{ width: '100%' }}>
+                ENTER LIVE AUDIENCE BALLOT <ArrowUpRight size={17} />
+              </Link>
+              <Link href="/m6?tab=svo" className="button button-outline-black" style={{ width: '100%', borderColor: 'var(--red)', color: 'var(--red)' }}>
+                🧠 TAKE DR. HARSHIL&apos;S EXPERIMENT (PRE &amp; POST) <ArrowUpRight size={17} />
+              </Link>
+            </div>
+            <p className="microcopy">Registrations are open now. Limited seats for honest minds.</p>
           </div>
         </div>
       </section>
@@ -305,7 +383,16 @@ export default function Page() {
           {archive.map((item) => (
             <div className="archive-row" key={item.number}>
               <span>{item.number}</span>
-              <strong>{item.title}</strong>
+              <strong>
+                {item.href ? (
+                  <Link href={item.href} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    {item.title}
+                    <ArrowUpRight size={13} style={{ opacity: 0.7 }} />
+                  </Link>
+                ) : (
+                  item.title
+                )}
+              </strong>
               <small>{item.date}</small>
             </div>
           ))}
