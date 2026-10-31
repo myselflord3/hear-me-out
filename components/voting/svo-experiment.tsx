@@ -1,29 +1,17 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Brain,
   CheckCircle2,
-  Sparkles,
   ArrowRight,
   RefreshCw,
-  TrendingUp,
   BarChart2,
   Users,
-  Flame,
-  Scale,
-  Award,
-  ChevronRight,
   RotateCcw,
-  Lock,
   Search,
-  ChevronDown,
-  ChevronUp,
-  Ghost,
-  ShieldAlert,
-  Sliders,
-  Layers,
-  HelpCircle,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react'
 import {
   SVO_QUESTIONS,
@@ -51,13 +39,15 @@ export function SVOExperiment({
   isSigningIn,
   roomChannel,
 }: SVOExperimentProps) {
-  // Phase state: 'pre' or 'post'
+  // Phase state: 'pre' (before lecture) or 'post' (after lecture)
   const [phase, setPhase] = useState<PhaseType>('pre')
+  // Active sub-view: 'test' (taking/viewing questionnaire) or 'analytics' (room charts)
+  const [subView, setSubView] = useState<'test' | 'analytics'>('test')
   // Active question index: 0 to 8
   const [activeQuestion, setActiveQuestion] = useState<number>(0)
-  // User's choices for the 9 questions
+  // User's choices for the 9 questions: { [questionId]: 'A' | 'B' | 'C' }
   const [choices, setChoices] = useState<Record<number, ChoiceKey>>({})
-  // Submitted state
+  // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submittedResult, setSubmittedResult] = useState<{
     orientation: OrientationType
@@ -66,20 +56,15 @@ export function SVOExperiment({
     competitiveCount: number
   } | null>(null)
 
-  // Realtime all room responses
+  // Real-time audience responses
   const [allResponses, setAllResponses] = useState<SVOResponseRecord[]>([])
-  const [statsViewPhase, setStatsViewPhase] = useState<'all' | 'pre' | 'post'>('all')
+  const [analyticsPhaseFilter, setAnalyticsPhaseFilter] = useState<'all' | 'pre' | 'post'>('all')
 
-  // Visual Graph 3: Selected Scenario index for dilemma deep-dive (0 to 8)
-  const [selectedScenarioIdx, setSelectedScenarioIdx] = useState<number>(0)
+  // Search & Filter for audience list
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterType, setFilterType] = useState<string>('all')
 
-  // Dossier Filters
-  const [dossierSearch, setDossierSearch] = useState<string>('')
-  const [dossierFilterPhase, setDossierFilterPhase] = useState<'all' | 'pre' | 'post'>('all')
-  const [dossierFilterType, setDossierFilterType] = useState<string>('all')
-  const [expandedUserKey, setExpandedUserKey] = useState<string | null>(null)
-
-  // Check saved state for current user/phase
+  // Load cached result from localStorage on mount / phase switch
   useEffect(() => {
     if (typeof window !== 'undefined' && user?.id) {
       const saved = localStorage.getItem(`hmo_svo_result_${user.id}_${phase}`)
@@ -95,7 +80,7 @@ export function SVOExperiment({
     }
   }, [user?.id, phase])
 
-  // Fetch initial responses from Supabase DB
+  // Fetch initial responses from Supabase
   useEffect(() => {
     if (!isSupabaseConfigured()) return
 
@@ -108,7 +93,6 @@ export function SVOExperiment({
       .then(({ data, error }) => {
         if (!error && data) {
           setAllResponses(data as SVOResponseRecord[])
-          // Check if current user already submitted
           if (user?.id) {
             const existing = (data as SVOResponseRecord[]).find(
               (r) => r.user_id === user.id && r.phase === phase
@@ -129,7 +113,7 @@ export function SVOExperiment({
       })
       .catch((err) => console.warn('Notice loading svo_responses:', err))
 
-    // Realtime broadcast listener on roomChannel
+    // Real-time broadcast listener
     if (roomChannel) {
       roomChannel.on('broadcast', { event: 'svo_submission' }, ({ payload }: any) => {
         if (payload) {
@@ -144,22 +128,18 @@ export function SVOExperiment({
     }
   }, [roomChannel, user?.id, phase])
 
-  // Handle option selection
+  // Choice selection
   const handleSelectChoice = (questionId: number, choice: ChoiceKey) => {
-    const updated = { ...choices, [questionId]: choice }
-    setChoices(updated)
-
-    // Auto-advance to next question after tap
-    if (activeQuestion < 8) {
-      setTimeout(() => setActiveQuestion((prev) => prev + 1), 160)
-    }
+    setChoices((prev) => ({ ...prev, [questionId]: choice }))
   }
 
   const answeredCount = Object.keys(choices).length
   const allAnswered = answeredCount === 9
+  const currentQ = SVO_QUESTIONS[activeQuestion]
+  const currentChoice = choices[currentQ.id]
   const calculated = calculateSVO(choices)
 
-  // Submit response with verified Google identity
+  // Submit response
   const handleSubmit = async () => {
     if (!allAnswered || !user) return
     setIsSubmitting(true)
@@ -184,7 +164,7 @@ export function SVOExperiment({
 
     setSubmittedResult(calculated)
 
-    // Optimistically update in-memory list
+    // Optimistic update
     setAllResponses((prev) => {
       const filtered = prev.filter(
         (r) => !(r.user_id === resultRecord.user_id && r.phase === resultRecord.phase)
@@ -192,7 +172,7 @@ export function SVOExperiment({
       return [resultRecord, ...filtered]
     })
 
-    // Broadcast live to room
+    // Supabase upsert & broadcast
     try {
       if (roomChannel) {
         roomChannel.send({
@@ -202,7 +182,6 @@ export function SVOExperiment({
         })
       }
 
-      // Supabase atomic upsert with full user identity
       if (isSupabaseConfigured()) {
         const supabase = createClient()
         await supabase.from('svo_responses').upsert(
@@ -223,7 +202,7 @@ export function SVOExperiment({
         )
       }
     } catch (err) {
-      console.warn('Realtime SVO sync notice:', err)
+      console.warn('SVO submit notice:', err)
     } finally {
       setIsSubmitting(false)
     }
@@ -240,9 +219,9 @@ export function SVOExperiment({
 
   // --- STATS CALCULATIONS ---
   const filteredResponses = useMemo(() => {
-    if (statsViewPhase === 'all') return allResponses
-    return allResponses.filter((r) => r.phase === statsViewPhase)
-  }, [allResponses, statsViewPhase])
+    if (analyticsPhaseFilter === 'all') return allResponses
+    return allResponses.filter((r) => r.phase === analyticsPhaseFilter)
+  }, [allResponses, analyticsPhaseFilter])
 
   const totalCount = filteredResponses.length
   const prosocialCount = filteredResponses.filter((r) => r.orientation === 'prosocial').length
@@ -269,62 +248,55 @@ export function SVOExperiment({
   const preCompPct = preTotal > 0 ? Math.round((preResponses.filter((r) => r.orientation === 'competitive').length / preTotal) * 100) : 0
   const postCompPct = postTotal > 0 ? Math.round((postResponses.filter((r) => r.orientation === 'competitive').length / postTotal) * 100) : 0
 
-  // Question-by-Question breakdown (Graph 3)
-  const currentScenario = SVO_QUESTIONS[selectedScenarioIdx]
-  const scenarioResponses = filteredResponses.filter((r) => r.choices && r.choices[currentScenario.id])
-  const scenTotal = scenarioResponses.length
-  const optACount = scenarioResponses.filter((r) => r.choices[currentScenario.id] === 'A').length
-  const optBCount = scenarioResponses.filter((r) => r.choices[currentScenario.id] === 'B').length
-  const optCCount = scenarioResponses.filter((r) => r.choices[currentScenario.id] === 'C').length
-
-  const optAPct = scenTotal > 0 ? Math.round((optACount / scenTotal) * 100) : 0
-  const optBPct = scenTotal > 0 ? Math.round((optBCount / scenTotal) * 100) : 0
-  const optCPct = scenTotal > 0 ? Math.round((optCCount / scenTotal) * 100) : 0
-
-  // Dossier filtered list ("Who Selected What")
-  const dossierList = useMemo(() => {
+  // Filtered Roster for "Who selected what"
+  const rosterList = useMemo(() => {
     return allResponses.filter((r) => {
-      if (dossierFilterPhase !== 'all' && r.phase !== dossierFilterPhase) return false
-      if (dossierFilterType !== 'all' && r.orientation !== dossierFilterType) return false
-      if (dossierSearch.trim()) {
-        const query = dossierSearch.toLowerCase()
-        const nameMatch = r.display_name.toLowerCase().includes(query)
-        const emailMatch = r.email ? r.email.toLowerCase().includes(query) : false
+      if (analyticsPhaseFilter !== 'all' && r.phase !== analyticsPhaseFilter) return false
+      if (filterType !== 'all' && r.orientation !== filterType) return false
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const nameMatch = r.display_name.toLowerCase().includes(q)
+        const emailMatch = r.email ? r.email.toLowerCase().includes(q) : false
         return nameMatch || emailMatch
       }
       return true
     })
-  }, [allResponses, dossierFilterPhase, dossierFilterType, dossierSearch])
-
-  const currentQ = SVO_QUESTIONS[activeQuestion]
+  }, [allResponses, analyticsPhaseFilter, filterType, searchQuery])
 
   return (
-    <div className="svo-container spooky-svo">
-      {/* Experiment Header */}
-      <div className="svo-header-card spooky-glass-card">
-        <div className="svo-header-top">
-          <div className="svo-tag-badge spooky-blood-badge">
-            <Brain size={14} className="text-amber-400" />
-            <span>DR. HARSHIL VYAS • IIT RESEARCH CONSULTANT STUDY</span>
-          </div>
-          <span className="svo-research-tag halloween-pulse-tag">
-            <Flame size={12} /> HALLOWEEN MORAL ASSESSMENT
-          </span>
+    <div className="svo-wrapper">
+      {/* 1. Header & Plain-English Context */}
+      <div className="svo-intro-card">
+        <div className="svo-badge-row">
+          <span className="svo-tag">Dr. Harshil Vyas • IIT Research Consultant</span>
+          <span className="svo-subtag">Social Value Orientation</span>
         </div>
 
-        <h2 className="svo-main-title spooky-title-glow">
-          UNMASKING YOUR INNER SHADOW:<br />
-          <span>HOW EVIL ARE YOU WHEN NO ONE WATCHES?</span>
+        <h2 className="svo-heading">
+          Where does your moral compass really point?
         </h2>
 
-        <p className="svo-instructions-concise spooky-subtext">
-          Imagine you are paired with an anonymous stranger in this room. You will never meet.
-          Each decision allocates points to <strong>You</strong> and to <strong>Them</strong>.
-          There are no right or wrong answers — choose what your gut genuinely desires.
+        <p className="svo-intro-text">
+          In this experiment, imagine you have been randomly paired with an <strong>anonymous stranger</strong> in this room whom you will never knowingly meet.
         </p>
 
-        {/* Phase Selector (PRE vs POST) */}
-        <div className="svo-phase-selector spooky-phase-selector">
+        <div className="svo-rules-box">
+          <div className="rule-item">
+            <span className="rule-num">1</span>
+            <p>You will face <strong>9 simple scenarios</strong>. In each one, choose how a pool of points is divided between <strong>You</strong> and the <strong>Other Person</strong>.</p>
+          </div>
+          <div className="rule-item">
+            <span className="rule-num">2</span>
+            <p><strong>Points have real value:</strong> The more points you get, the better for you. The more points the other gets, the better for them.</p>
+          </div>
+          <div className="rule-item">
+            <span className="rule-num">3</span>
+            <p><strong>There are no wrong answers.</strong> Don&apos;t pick what sounds polite or &ldquo;virtuous.&rdquo; Choose what you would actually do.</p>
+          </div>
+        </div>
+
+        {/* Phase Toggle (Round 1 vs Round 2) */}
+        <div className="svo-round-selector">
           <button
             type="button"
             onClick={() => {
@@ -332,12 +304,12 @@ export function SVOExperiment({
               setChoices({})
               setActiveQuestion(0)
             }}
-            className={`svo-phase-btn spooky-phase-btn ${phase === 'pre' ? 'active-phase' : ''}`}
+            className={`svo-round-btn ${phase === 'pre' ? 'is-active' : ''}`}
           >
-            <span className="phase-indicator">01</span>
-            <div>
-              <strong>PRE-LECTURE RESPONSE 🕯️</strong>
-              <small>Take this before Dr. Harshil reveals human nature</small>
+            <span className="round-badge">ROUND 1</span>
+            <div className="round-text">
+              <strong>Pre-Lecture Baseline</strong>
+              <small>Take before Dr. Harshil&apos;s session</small>
             </div>
           </button>
 
@@ -348,36 +320,51 @@ export function SVOExperiment({
               setChoices({})
               setActiveQuestion(0)
             }}
-            className={`svo-phase-btn spooky-phase-btn ${phase === 'post' ? 'active-phase' : ''}`}
+            className={`svo-round-btn ${phase === 'post' ? 'is-active' : ''}`}
           >
-            <span className="phase-indicator">02</span>
-            <div>
-              <strong>POST-LECTURE RESPONSE 🎭</strong>
-              <small>Take this after the session to measure your moral shift</small>
+            <span className="round-badge">ROUND 2</span>
+            <div className="round-text">
+              <strong>Post-Lecture Verdict</strong>
+              <small>Take after the session to measure your shift</small>
             </div>
           </button>
         </div>
       </div>
 
-      {/* REQUIRE GOOGLE AUTHENTICATION */}
+      {/* Sub-view Switcher: Questionnaire vs Room Analytics */}
+      <div className="svo-subview-nav">
+        <button
+          type="button"
+          onClick={() => setSubView('test')}
+          className={`subview-tab ${subView === 'test' ? 'active' : ''}`}
+        >
+          <Brain size={16} />
+          <span>My Experiment {submittedResult ? '(Completed)' : `(${answeredCount}/9)`}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSubView('analytics')}
+          className={`subview-tab ${subView === 'analytics' ? 'active' : ''}`}
+        >
+          <BarChart2 size={16} />
+          <span>Live Room Analytics ({allResponses.length})</span>
+        </button>
+      </div>
+
+      {/* 2. AUTHENTICATION GATE */}
       {isAuthLoading ? (
-        <div className="svo-auth-gate-card spooky-glass-card">
-          <RefreshCw size={26} className="animate-spin text-amber-500" />
-          <p>Connecting to secure Google research ballot...</p>
+        <div className="svo-loading-card">
+          <RefreshCw size={22} className="animate-spin text-red-500" />
+          <span>Connecting to secure study...</span>
         </div>
       ) : !user ? (
-        <div className="svo-auth-gate-card spooky-glass-card">
-          <div className="spooky-gate-icon-halo">
-            <Ghost size={34} className="text-red-500" />
-          </div>
-          <div className="svo-gate-content">
-            <span className="spooky-gate-tag">AUTHENTICATION REQUIRED</span>
-            <h3 className="spooky-gate-title">SIGN IN TO RECORD YOUR SHADOW PROFILE</h3>
-            <p className="spooky-gate-desc">
-              To cross-analyze individual responses before and after the lecture, Dr. Harshil&apos;s
-              study requires verified Google authentication. Your choices will be tied to your verified identity.
+        <div className="svo-auth-card">
+          <div className="auth-card-inner">
+            <h3>Sign in to participate</h3>
+            <p>
+              Dr. Harshil&apos;s research requires one verified participant per seat to prevent skewed data.
+              Signing in once unlocks both this experiment and the Live Motion 06 Ballot.
             </p>
-
             <button
               onClick={() => {
                 if (typeof window !== 'undefined') {
@@ -387,7 +374,7 @@ export function SVOExperiment({
                 onGoogleSignIn()
               }}
               disabled={isSigningIn}
-              className="google-signin-button spooky-google-btn"
+              className="google-signin-button"
             >
               {isSigningIn ? (
                 <>
@@ -414,686 +401,481 @@ export function SVOExperiment({
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                     />
                   </svg>
-                  <span>SIGN IN WITH GOOGLE TO PARTICIPATE</span>
+                  <span>SIGN IN WITH GOOGLE</span>
                 </>
               )}
             </button>
-            <span className="spooky-gate-note">
-              🔒 Authenticates once for both the Moral Tribunal Ballot and Dr. Harshil&apos;s SVO Study.
-            </span>
+            <small className="auth-privacy-note">
+              🔒 No passwords or spam. Your raw email address is never made public.
+            </small>
           </div>
         </div>
-      ) : (
-        <>
-          {/* Authenticated Participant Pill */}
-          <div className="svo-user-banner spooky-user-banner">
-            <div className="user-info-left">
-              <span className="candle-flame-icon">🕯️</span>
-              <div>
-                <strong>VERIFIED SUBJECT: {user.name}</strong>
-                {user.email && <small>{user.email}</small>}
-              </div>
-            </div>
-            <span className="identity-verified-pill">GOOGLE VERIFIED</span>
-          </div>
-
-          {/* Main Interactive Body: Quiz OR Result */}
-          {!submittedResult ? (
-            <div className="svo-quiz-card spooky-glass-card">
-              {/* Progress Header */}
-              <div className="svo-progress-row">
-                <div className="svo-step-counter">
-                  <strong>SCENARIO {activeQuestion + 1}</strong>
-                  <span>OF 9</span>
-                </div>
-                <div className="svo-progress-pills">
-                  {SVO_QUESTIONS.map((q, idx) => (
-                    <button
-                      key={q.id}
-                      type="button"
-                      onClick={() => setActiveQuestion(idx)}
-                      className={`svo-pill-dot ${idx === activeQuestion ? 'current' : ''} ${
-                        choices[q.id] ? 'answered' : ''
-                      }`}
-                      aria-label={`Jump to question ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-                <span className="svo-answered-badge">
-                  {answeredCount}/9 CHOSEN
+      ) : subView === 'test' ? (
+        /* ========================================================================= */
+        /* SUBVIEW: STEP-BY-STEP QUESTIONNAIRE OR PERSONAL RESULT                     */
+        /* ========================================================================= */
+        !submittedResult ? (
+          <div className="svo-quiz-box">
+            {/* Step Counter & Progress Bar */}
+            <div className="quiz-progress-header">
+              <div className="progress-label-row">
+                <span className="scenario-step-badge">
+                  SCENARIO {activeQuestion + 1} OF 9
+                </span>
+                <span className="answered-status-text">
+                  {answeredCount} of 9 selected
                 </span>
               </div>
-
-              {/* Current Question Choice Cards */}
-              <div className="svo-choices-grid">
-                {(['A', 'B', 'C'] as ChoiceKey[]).map((letter) => {
-                  const opt = currentQ.options[letter]
-                  const isSelected = choices[currentQ.id] === letter
-
-                  return (
-                    <button
-                      key={letter}
-                      type="button"
-                      onClick={() => handleSelectChoice(currentQ.id, letter)}
-                      className={`svo-choice-box spooky-choice-box ${isSelected ? 'is-selected' : ''}`}
-                    >
-                      <div className="svo-choice-header">
-                        <span className="svo-letter-badge">OPTION {letter}</span>
-                        {isSelected && (
-                          <span className="svo-selected-check">
-                            <CheckCircle2 size={15} /> SELECTED
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="svo-points-breakdown">
-                        <div className="svo-point-row you-points">
-                          <span className="point-label">YOU RECEIVE:</span>
-                          <strong className="point-val">{opt.you} pts</strong>
-                        </div>
-                        <div className="svo-point-divider" />
-                        <div className="svo-point-row other-points">
-                          <span className="point-label">STRANGER RECEIVES:</span>
-                          <strong className="point-val">{opt.other} pts</strong>
-                        </div>
-                      </div>
-
-                      <div className="svo-choice-footer">
-                        <span className="tap-hint">
-                          {isSelected ? 'VERDICT LOCKED' : 'TAP TO CHOOSE'}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
+              <div className="quiz-progress-track">
+                <div
+                  className="quiz-progress-fill"
+                  style={{ width: `${((activeQuestion + 1) / 9) * 100}%` }}
+                />
               </div>
+            </div>
 
-              {/* Navigation Controls */}
-              <div className="svo-nav-bar">
+            {/* Quick jump step dots */}
+            <div className="quiz-step-dots" aria-label="Step navigation">
+              {SVO_QUESTIONS.map((q, idx) => (
+                <button
+                  key={q.id}
+                  type="button"
+                  onClick={() => setActiveQuestion(idx)}
+                  className={`step-dot-btn ${idx === activeQuestion ? 'current' : ''} ${
+                    choices[q.id] ? 'answered' : ''
+                  }`}
+                  aria-label={`Jump to scenario ${idx + 1}`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+
+            {/* Scenario Prompt */}
+            <div className="scenario-prompt">
+              <h3>Which distribution of points do you prefer?</h3>
+              <p>Pick the split you would naturally choose between yourself and a stranger.</p>
+            </div>
+
+            {/* 3 Choice Cards */}
+            <div className="choice-cards-container">
+              {(['A', 'B', 'C'] as ChoiceKey[]).map((letter) => {
+                const opt = currentQ.options[letter]
+                const isSelected = currentChoice === letter
+
+                return (
+                  <button
+                    key={letter}
+                    type="button"
+                    onClick={() => handleSelectChoice(currentQ.id, letter)}
+                    className={`scenario-choice-card ${isSelected ? 'is-selected' : ''}`}
+                  >
+                    <div className="choice-top-line">
+                      <span className="choice-letter-tag">OPTION {letter}</span>
+                      {isSelected ? (
+                        <span className="selected-tag">
+                          <CheckCircle2 size={15} /> SELECTED
+                        </span>
+                      ) : (
+                        <span className="tap-prompt">TAP TO SELECT</span>
+                      )}
+                    </div>
+
+                    <div className="choice-values-row">
+                      <div className="value-block you-block">
+                        <span className="value-label">YOU GET</span>
+                        <strong className="value-num">{opt.you} <small>pts</small></strong>
+                      </div>
+                      <div className="value-separator" />
+                      <div className="value-block other-block">
+                        <span className="value-label">STRANGER GETS</span>
+                        <strong className="value-num">{opt.other} <small>pts</small></strong>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Step Navigation Controls */}
+            <div className="quiz-controls-row">
+              <button
+                type="button"
+                onClick={() => setActiveQuestion((prev) => Math.max(0, prev - 1))}
+                disabled={activeQuestion === 0}
+                className="button button-small button-outline-black"
+                style={{ opacity: activeQuestion === 0 ? 0.35 : 1 }}
+              >
+                <ChevronLeft size={16} /> Back
+              </button>
+
+              {activeQuestion < 8 ? (
                 <button
                   type="button"
-                  onClick={() => setActiveQuestion((prev) => Math.max(0, prev - 1))}
-                  disabled={activeQuestion === 0}
-                  className="button button-small button-outline-black spooky-btn"
+                  onClick={() => {
+                    if (currentChoice) {
+                      setActiveQuestion((prev) => Math.min(8, prev + 1))
+                    }
+                  }}
+                  disabled={!currentChoice}
+                  className="button button-small button-black"
+                  style={{ opacity: !currentChoice ? 0.45 : 1 }}
                 >
-                  PREVIOUS
+                  Next Scenario <ChevronRight size={16} />
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={!allAnswered || isSubmitting}
+                  className="button button-small button-red"
+                  style={{ opacity: !allAnswered || isSubmitting ? 0.45 : 1 }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" /> Submitting...
+                    </>
+                  ) : (
+                    <>
+                      Submit &amp; View Result ({answeredCount}/9) <ArrowRight size={15} />
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Personal Result Reveal */
+          <div className="svo-result-card">
+            <div className="result-phase-badge">
+              {phase === 'pre' ? 'ROUND 1 • PRE-LECTURE RESULT' : 'ROUND 2 • POST-LECTURE RESULT'}
+            </div>
 
-                {activeQuestion < 8 ? (
-                  <button
-                    type="button"
-                    onClick={() => setActiveQuestion((prev) => Math.min(8, prev + 1))}
-                    className="button button-small button-black spooky-btn-black"
-                  >
-                    NEXT SCENARIO <ChevronRight size={14} />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={!allAnswered || isSubmitting}
-                    className="button button-small button-red spooky-btn-red"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <RefreshCw size={14} className="animate-spin" />
-                        RECORDING VERDICT...
-                      </>
-                    ) : (
-                      <>
-                        SUBMIT SHADOW PROFILE ({answeredCount}/9) <CheckCircle2 size={14} />
-                      </>
-                    )}
-                  </button>
-                )}
+            <div
+              className="result-hero-box"
+              style={{
+                borderColor: ORIENTATION_DESCRIPTIONS[submittedResult.orientation].color,
+              }}
+            >
+              <span className="result-emoji-icon">
+                {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].emoji}
+              </span>
+              <span className="result-category-label">
+                {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].badge}
+              </span>
+              <h3 className="result-title-text">
+                {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].title}
+              </h3>
+              <p className="result-subtitle-text">
+                {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].subtitle}
+              </p>
+              <p className="result-body-text">
+                {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].description}
+              </p>
+
+              {/* 9-Question Breakdown */}
+              <div className="result-breakdown-row">
+                <div className="breakdown-stat">
+                  <span>COOPERATIVE</span>
+                  <strong>{submittedResult.prosocialCount} / 9</strong>
+                </div>
+                <div className="breakdown-stat">
+                  <span>SELF-GAIN</span>
+                  <strong>{submittedResult.individualisticCount} / 9</strong>
+                </div>
+                <div className="breakdown-stat">
+                  <span>COMPETITIVE</span>
+                  <strong>{submittedResult.competitiveCount} / 9</strong>
+                </div>
               </div>
+            </div>
+
+            <div className="result-actions-grid">
+              <button
+                type="button"
+                onClick={() => setSubView('analytics')}
+                className="button button-red"
+              >
+                <BarChart2 size={16} /> View Room Results ({allResponses.length} Votes)
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRetake}
+                className="button button-outline-black"
+              >
+                <RotateCcw size={15} /> Retake Round
+              </button>
+
+              {phase === 'pre' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhase('post')
+                    setChoices({})
+                    setActiveQuestion(0)
+                    setSubmittedResult(null)
+                  }}
+                  className="button button-black"
+                >
+                  Proceed to Round 2 (Post-Lecture) <ArrowRight size={15} />
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      ) : (
+        /* ========================================================================= */
+        /* SUBVIEW: LIVE ROOM ANALYTICS (GRAPHS & WHO SELECTED WHAT)                 */
+        /* ========================================================================= */
+        <div className="svo-analytics-container">
+          {/* Filter Bar: All vs Pre vs Post */}
+          <div className="analytics-filter-header">
+            <span className="analytics-filter-label">Filter Audience Data:</span>
+            <div className="analytics-filter-buttons">
+              <button
+                type="button"
+                onClick={() => setAnalyticsPhaseFilter('all')}
+                className={`filter-btn ${analyticsPhaseFilter === 'all' ? 'active' : ''}`}
+              >
+                All Responses ({allResponses.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalyticsPhaseFilter('pre')}
+                className={`filter-btn ${analyticsPhaseFilter === 'pre' ? 'active' : ''}`}
+              >
+                Pre-Lecture ({preTotal})
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalyticsPhaseFilter('post')}
+                className={`filter-btn ${analyticsPhaseFilter === 'post' ? 'active' : ''}`}
+              >
+                Post-Lecture ({postTotal})
+              </button>
+            </div>
+          </div>
+
+          {totalCount === 0 ? (
+            <div className="analytics-empty-box">
+              <Users size={32} className="opacity-40 mb-2" />
+              <h4>No audience data recorded yet for this filter</h4>
+              <p>Be the first to submit your answers above!</p>
+              <button
+                type="button"
+                onClick={() => setSubView('test')}
+                className="button button-small button-red mt-3"
+              >
+                Take the Test <ArrowRight size={14} />
+              </button>
             </div>
           ) : (
-            /* Result Reveal Card */
-            <div className="svo-result-card spooky-glass-card">
-              <div className="svo-result-header">
-                <span className="result-eyebrow">
-                  {phase === 'pre' ? '🕯️ PRE-LECTURE DIAGNOSIS' : '🎭 POST-LECTURE DIAGNOSIS'}
-                </span>
-                <span className="result-verified-pill">OFFICIAL SVO ORIENTATION</span>
-              </div>
-
-              <div
-                className="svo-result-hero spooky-hero-border"
-                style={{
-                  borderColor: ORIENTATION_DESCRIPTIONS[submittedResult.orientation].color,
-                }}
-              >
-                <div className="result-emoji">
-                  {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].emoji}
+            <>
+              {/* Graph 1: Room Distribution */}
+              <div className="analytics-card">
+                <div className="card-heading-row">
+                  <BarChart2 size={18} className="text-red-500" />
+                  <h3>Room Moral Distribution ({totalCount} Verified Participants)</h3>
                 </div>
-                <div className="result-type-tag">
-                  {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].badge}
-                </div>
-                <h3 className="result-name">
-                  {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].title}
-                </h3>
-                <p className="result-subtitle">
-                  {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].subtitle}
-                </p>
-                <p className="result-description">
-                  {ORIENTATION_DESCRIPTIONS[submittedResult.orientation].description}
-                </p>
 
-                <div className="result-counts-bar">
-                  <div>
-                    <span>COOPERATIVE</span>
-                    <strong>{submittedResult.prosocialCount}/9</strong>
-                  </div>
-                  <div>
-                    <span>SELF-GAIN</span>
-                    <strong>{submittedResult.individualisticCount}/9</strong>
-                  </div>
-                  <div>
-                    <span>DARK EDGE (DOMINANCE)</span>
-                    <strong>{submittedResult.competitiveCount}/9</strong>
+                {/* Composite Bar */}
+                <div className="room-bar-wrapper">
+                  <div className="room-distribution-bar">
+                    {prosocialPct > 0 && (
+                      <div
+                        className="bar-slice slice-prosocial"
+                        style={{ width: `${prosocialPct}%` }}
+                        title={`Cooperative: ${prosocialPct}%`}
+                      >
+                        {prosocialPct >= 10 && <span>{prosocialPct}%</span>}
+                      </div>
+                    )}
+                    {individualisticPct > 0 && (
+                      <div
+                        className="bar-slice slice-individualistic"
+                        style={{ width: `${individualisticPct}%` }}
+                        title={`Self-Maximizing: ${individualisticPct}%`}
+                      >
+                        {individualisticPct >= 10 && <span>{individualisticPct}%</span>}
+                      </div>
+                    )}
+                    {competitivePct > 0 && (
+                      <div
+                        className="bar-slice slice-competitive"
+                        style={{ width: `${competitivePct}%` }}
+                        title={`Competitive: ${competitivePct}%`}
+                      >
+                        {competitivePct >= 10 && <span>{competitivePct}%</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              <div className="svo-result-actions">
-                <button
-                  type="button"
-                  onClick={handleRetake}
-                  className="button button-small button-outline-black spooky-btn"
-                >
-                  <RotateCcw size={13} /> RETAKE THIS TEST
-                </button>
-                {phase === 'pre' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPhase('post')
-                      setChoices({})
-                      setActiveQuestion(0)
-                      setSubmittedResult(null)
-                    }}
-                    className="button button-small button-red spooky-btn-red"
-                  >
-                    TAKE POST-LECTURE ASSESSMENT <ArrowRight size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ========================================================================= */}
-      {/* VISUAL GRAPHS SECTION (BELOW)                                             */}
-      {/* ========================================================================= */}
-
-      {/* GRAPH 1: Live Room Moral Spectrum */}
-      <div className="svo-visual-card spooky-glass-card">
-        <div className="visual-card-header">
-          <div className="header-title-row">
-            <BarChart2 size={18} className="text-red-500" />
-            <h3 className="visual-heading">GRAPH 1: ROOM MORAL SPECTRUM</h3>
-          </div>
-          <div className="stats-view-tabs spooky-tabs">
-            <button
-              type="button"
-              onClick={() => setStatsViewPhase('all')}
-              className={`stats-tab ${statsViewPhase === 'all' ? 'active' : ''}`}
-            >
-              ALL SESSIONS ({allResponses.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatsViewPhase('pre')}
-              className={`stats-tab ${statsViewPhase === 'pre' ? 'active' : ''}`}
-            >
-              PRE-LECTURE ({preTotal})
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatsViewPhase('post')}
-              className={`stats-tab ${statsViewPhase === 'post' ? 'active' : ''}`}
-            >
-              POST-LECTURE ({postTotal})
-            </button>
-          </div>
-        </div>
-
-        {totalCount === 0 ? (
-          <div className="stats-empty-state">
-            <Users size={28} className="opacity-40" />
-            <p>No verified responses recorded yet.</p>
-            <small>Sign in with Google above to place your verdict on the live chart.</small>
-          </div>
-        ) : (
-          <div className="visual-graph-body">
-            {/* 100% Composite Horizontal Distribution Bar */}
-            <div className="composite-spectrum-bar-wrap">
-              <div className="composite-bar-labels">
-                <span className="comp-label-left">ROOM MORAL SPECTRUM ({totalCount} VERIFIED SUBJECTS)</span>
-                <span className="comp-label-right">PROSOCIAL / INDIVIDUALISTIC / COMPETITIVE</span>
-              </div>
-              <div className="composite-spectrum-bar">
-                {prosocialPct > 0 && (
-                  <div
-                    className="spectrum-seg seg-prosocial"
-                    style={{ width: `${prosocialPct}%` }}
-                    title={`Prosocial: ${prosocialPct}%`}
-                  >
-                    <span>{prosocialPct}%</span>
-                  </div>
-                )}
-                {individualisticPct > 0 && (
-                  <div
-                    className="spectrum-seg seg-individualistic"
-                    style={{ width: `${individualisticPct}%` }}
-                    title={`Individualistic: ${individualisticPct}%`}
-                  >
-                    <span>{individualisticPct}%</span>
-                  </div>
-                )}
-                {competitivePct > 0 && (
-                  <div
-                    className="spectrum-seg seg-competitive"
-                    style={{ width: `${competitivePct}%` }}
-                    title={`Competitive: ${competitivePct}%`}
-                  >
-                    <span>{competitivePct}%</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 3 Archetype Cards with Big Visual Meters */}
-            <div className="archetype-cards-grid">
-              {/* Card 1: Prosocial */}
-              <div className="archetype-stat-card card-prosocial">
-                <div className="card-top">
-                  <span className="card-emoji">🤝</span>
-                  <span className="card-tag">EQUALITARIAN</span>
-                </div>
-                <div className="card-numbers">
-                  <strong className="card-pct">{prosocialPct}%</strong>
-                  <span className="card-count">{prosocialCount} subjects</span>
-                </div>
-                <div className="card-bar-track">
-                  <div className="card-bar-fill fill-pro" style={{ width: `${prosocialPct}%` }} />
-                </div>
-                <h4 className="card-title">PROSOCIAL</h4>
-                <p className="card-desc">
-                  Values joint equality. Sacrifices personal dominance for mutual gain.
-                </p>
-              </div>
-
-              {/* Card 2: Individualistic */}
-              <div className="archetype-stat-card card-individualistic">
-                <div className="card-top">
-                  <span className="card-emoji">👤</span>
-                  <span className="card-tag">PRAGMATIST</span>
-                </div>
-                <div className="card-numbers">
-                  <strong className="card-pct">{individualisticPct}%</strong>
-                  <span className="card-count">{individualisticCount} subjects</span>
-                </div>
-                <div className="card-bar-track">
-                  <div className="card-bar-fill fill-ind" style={{ width: `${individualisticPct}%` }} />
-                </div>
-                <h4 className="card-title">INDIVIDUALISTIC</h4>
-                <p className="card-desc">
-                  Self-maximizer. Indifferent to the other person as long as their payout peaks.
-                </p>
-              </div>
-
-              {/* Card 3: Competitive */}
-              <div className="archetype-stat-card card-competitive">
-                <div className="card-top">
-                  <span className="card-emoji">⚔️</span>
-                  <span className="card-tag">DARK EDGE</span>
-                </div>
-                <div className="card-numbers">
-                  <strong className="card-pct">{competitivePct}%</strong>
-                  <span className="card-count">{competitiveCount} subjects</span>
-                </div>
-                <div className="card-bar-track">
-                  <div className="card-bar-fill fill-comp" style={{ width: `${competitivePct}%` }} />
-                </div>
-                <h4 className="card-title">COMPETITIVE</h4>
-                <p className="card-desc">
-                  Relative superiority. Sacrifices points just to keep the stranger down.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* GRAPH 2: The Pre vs Post "Moral Shift" Comparison Matrix */}
-      <div className="svo-visual-card spooky-glass-card">
-        <div className="visual-card-header">
-          <div className="header-title-row">
-            <TrendingUp size={18} className="text-red-500" />
-            <h3 className="visual-heading">GRAPH 2: THE MORAL SHIFT MATRIX (PRE VS POST LECTURE)</h3>
-          </div>
-          <span className="live-research-indicator">
-            <span className="live-dot-mini" /> DR. HARSHIL&apos;S INTERVENTION IMPACT
-          </span>
-        </div>
-
-        {preTotal === 0 || postTotal === 0 ? (
-          <div className="shift-awaiting-box">
-            <Scale size={24} className="opacity-40" />
-            <p>
-              <strong>Awaiting comparative data:</strong> Currently recorded {preTotal} Pre-Lecture and {postTotal} Post-Lecture responses.
-            </p>
-            <small>Once participants take both tests, the visual shift matrix dynamically calculates here.</small>
-          </div>
-        ) : (
-          <div className="shift-comparison-body">
-            {/* Summary shift insight badge */}
-            <div className="shift-insight-alert">
-              <ShieldAlert size={16} className="text-red-500" />
-              <span>
-                <strong>PSYCHOLOGICAL SHIFT: </strong>
-                Competitive orientation shifted from <strong>{preCompPct}%</strong> to <strong>{postCompPct}%</strong>{' '}
-                ({postCompPct >= preCompPct ? `+${postCompPct - preCompPct}% increase in dark dominance 🔺` : `${postCompPct - preCompPct}% decrease 🔻`}).
-              </span>
-            </div>
-
-            {/* Visual grouped comparison bars */}
-            <div className="grouped-shift-grid">
-              {/* Prosocial Comparison */}
-              <div className="grouped-bar-col">
-                <div className="col-header">
-                  <strong>PROSOCIAL 🤝</strong>
-                  <span>{postProPct >= preProPct ? `+${postProPct - preProPct}%` : `${postProPct - preProPct}%`}</span>
-                </div>
-                <div className="dual-bar-container">
-                  <div className="bar-sub-row">
-                    <span className="bar-tag">PRE:</span>
-                    <div className="bar-rail">
-                      <div className="bar-fill-pre" style={{ width: `${preProPct}%` }} />
+                {/* 3 Orientation Stat Cards */}
+                <div className="orientation-stats-grid">
+                  <div className="orientation-stat-card card-prosocial">
+                    <div className="stat-card-header">
+                      <span>🤝 COOPERATIVE</span>
+                      <strong>{prosocialPct}%</strong>
                     </div>
-                    <span className="bar-val">{preProPct}%</span>
-                  </div>
-                  <div className="bar-sub-row">
-                    <span className="bar-tag">POST:</span>
-                    <div className="bar-rail">
-                      <div className="bar-fill-post" style={{ width: `${postProPct}%` }} />
+                    <div className="stat-card-bar">
+                      <div style={{ width: `${prosocialPct}%` }} />
                     </div>
-                    <span className="bar-val">{postProPct}%</span>
+                    <p className="stat-card-desc">
+                      Prioritizes joint equality and fair outcomes ({prosocialCount} participants).
+                    </p>
                   </div>
-                </div>
-              </div>
 
-              {/* Individualistic Comparison */}
-              <div className="grouped-bar-col">
-                <div className="col-header">
-                  <strong>INDIVIDUALISTIC 👤</strong>
-                  <span>{postIndPct >= preIndPct ? `+${postIndPct - preIndPct}%` : `${postIndPct - preIndPct}%`}</span>
-                </div>
-                <div className="dual-bar-container">
-                  <div className="bar-sub-row">
-                    <span className="bar-tag">PRE:</span>
-                    <div className="bar-rail">
-                      <div className="bar-fill-pre ind" style={{ width: `${preIndPct}%` }} />
+                  <div className="orientation-stat-card card-individualistic">
+                    <div className="stat-card-header">
+                      <span>👤 SELF-MAXIMIZING</span>
+                      <strong>{individualisticPct}%</strong>
                     </div>
-                    <span className="bar-val">{preIndPct}%</span>
-                  </div>
-                  <div className="bar-sub-row">
-                    <span className="bar-tag">POST:</span>
-                    <div className="bar-rail">
-                      <div className="bar-fill-post ind" style={{ width: `${postIndPct}%` }} />
+                    <div className="stat-card-bar">
+                      <div style={{ width: `${individualisticPct}%` }} />
                     </div>
-                    <span className="bar-val">{postIndPct}%</span>
+                    <p className="stat-card-desc">
+                      Maximizes own payoff regardless of others ({individualisticCount} participants).
+                    </p>
                   </div>
-                </div>
-              </div>
 
-              {/* Competitive Comparison */}
-              <div className="grouped-bar-col">
-                <div className="col-header">
-                  <strong>COMPETITIVE ⚔️</strong>
-                  <span className="text-red-400">
-                    {postCompPct >= preCompPct ? `+${postCompPct - preCompPct}%` : `${postCompPct - preCompPct}%`}
-                  </span>
-                </div>
-                <div className="dual-bar-container">
-                  <div className="bar-sub-row">
-                    <span className="bar-tag">PRE:</span>
-                    <div className="bar-rail">
-                      <div className="bar-fill-pre comp" style={{ width: `${preCompPct}%` }} />
+                  <div className="orientation-stat-card card-competitive">
+                    <div className="stat-card-header">
+                      <span>⚔️ COMPETITIVE</span>
+                      <strong>{competitivePct}%</strong>
                     </div>
-                    <span className="bar-val">{preCompPct}%</span>
-                  </div>
-                  <div className="bar-sub-row">
-                    <span className="bar-tag">POST:</span>
-                    <div className="bar-rail">
-                      <div className="bar-fill-post comp" style={{ width: `${postCompPct}%` }} />
+                    <div className="stat-card-bar">
+                      <div style={{ width: `${competitivePct}%` }} />
                     </div>
-                    <span className="bar-val">{postCompPct}%</span>
+                    <p className="stat-card-desc">
+                      Seeks relative advantage and winning over others ({competitiveCount} participants).
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* GRAPH 3: Scenario-by-Scenario Matrix (Inspect all 9 Dilemmas) */}
-      <div className="svo-visual-card spooky-glass-card">
-        <div className="visual-card-header">
-          <div className="header-title-row">
-            <Sliders size={18} className="text-amber-500" />
-            <h3 className="visual-heading">GRAPH 3: DILEMMA DEEP DIVE (SCENARIOS 1–9)</h3>
-          </div>
-          <span className="dilemma-counter">
-            SCENARIO {selectedScenarioIdx + 1} OF 9
-          </span>
-        </div>
+              {/* Graph 2: Pre vs Post Lecture Moral Shift */}
+              {(preTotal > 0 || postTotal > 0) && (
+                <div className="analytics-card">
+                  <div className="card-heading-row">
+                    <Users size={18} className="text-red-500" />
+                    <h3>Did Dr. Harshil&apos;s Lecture Shift the Room?</h3>
+                  </div>
 
-        {/* 9 Scenario Quick Buttons */}
-        <div className="scenario-selector-strip">
-          {SVO_QUESTIONS.map((q, idx) => (
-            <button
-              key={q.id}
-              type="button"
-              onClick={() => setSelectedScenarioIdx(idx)}
-              className={`scenario-nav-btn ${idx === selectedScenarioIdx ? 'is-active' : ''}`}
-            >
-              Q{q.id}
-            </button>
-          ))}
-        </div>
+                  <p className="analytics-subtext">
+                    Comparing audience mindsets before the talk vs after:
+                  </p>
 
-        {/* Selected Scenario Breakdown */}
-        <div className="scenario-breakdown-box">
-          <div className="scenario-info-top">
-            <strong className="scenario-title">SCENARIO {currentScenario.id} BREAKDOWN:</strong>
-            <span className="scenario-voter-tally">{scenTotal} RESPONSES</span>
-          </div>
-
-          <div className="scenario-options-chart">
-            {(['A', 'B', 'C'] as ChoiceKey[]).map((letter) => {
-              const opt = currentScenario.options[letter]
-              const pct = letter === 'A' ? optAPct : letter === 'B' ? optBPct : optCPct
-              const count = letter === 'A' ? optACount : letter === 'B' ? optBCount : optCCount
-              const typeLabel =
-                opt.type === 'prosocial'
-                  ? 'COOPERATIVE (Prosocial)'
-                  : opt.type === 'individualistic'
-                  ? 'SELF-GAIN (Individualistic)'
-                  : 'DOMINANCE (Competitive)'
-
-              const colorClass =
-                opt.type === 'prosocial'
-                  ? 'color-pro'
-                  : opt.type === 'individualistic'
-                  ? 'color-ind'
-                  : 'color-comp'
-
-              return (
-                <div key={letter} className="scenario-option-row">
-                  <div className="scenario-opt-meta">
-                    <div className="opt-left">
-                      <span className="opt-letter">OPTION {letter}</span>
-                      <span className={`opt-type-tag ${colorClass}`}>{typeLabel}</span>
+                  <div className="shift-comparison-table">
+                    <div className="shift-row shift-header">
+                      <span>Orientation</span>
+                      <span>Pre-Lecture ({preTotal})</span>
+                      <span>Post-Lecture ({postTotal})</span>
+                      <span>Net Shift</span>
                     </div>
-                    <div className="opt-points">
-                      You: <strong>{opt.you} pts</strong> | Stranger: <strong>{opt.other} pts</strong>
+
+                    <div className="shift-row">
+                      <strong className="text-emerald-400">Cooperative (Prosocial)</strong>
+                      <span>{preProPct}%</span>
+                      <span>{postProPct}%</span>
+                      <strong className={postProPct >= preProPct ? 'text-emerald-400' : 'text-red-400'}>
+                        {postProPct - preProPct >= 0 ? `+${postProPct - preProPct}%` : `${postProPct - preProPct}%`}
+                      </strong>
                     </div>
-                    <div className="opt-stats">
-                      <strong className="opt-pct">{pct}%</strong>
-                      <span className="opt-votes">({count} votes)</span>
+
+                    <div className="shift-row">
+                      <strong className="text-amber-400">Self-Gain (Individualistic)</strong>
+                      <span>{preIndPct}%</span>
+                      <span>{postIndPct}%</span>
+                      <strong className={postIndPct >= preIndPct ? 'text-amber-400' : 'text-zinc-400'}>
+                        {postIndPct - preIndPct >= 0 ? `+${postIndPct - preIndPct}%` : `${postIndPct - preIndPct}%`}
+                      </strong>
+                    </div>
+
+                    <div className="shift-row">
+                      <strong className="text-red-400">Competitive (Dominance)</strong>
+                      <span>{preCompPct}%</span>
+                      <span>{postCompPct}%</span>
+                      <strong className={postCompPct >= preCompPct ? 'text-red-400' : 'text-emerald-400'}>
+                        {postCompPct - preCompPct >= 0 ? `+${postCompPct - preCompPct}%` : `${postCompPct - preCompPct}%`}
+                      </strong>
                     </div>
                   </div>
-                  <div className="scenario-bar-track">
-                    <div
-                      className={`scenario-bar-fill ${colorClass}`}
-                      style={{ width: `${pct}%` }}
+                </div>
+              )}
+
+              {/* Graph 3: Verified Audience Feed ("Who Selected What") */}
+              <div className="analytics-card">
+                <div className="card-heading-row">
+                  <Users size={18} className="text-red-500" />
+                  <h3>Audience Roster ({rosterList.length} verified submissions)</h3>
+                </div>
+
+                <div className="roster-search-bar">
+                  <div className="search-input-wrap">
+                    <Search size={15} className="search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search participant name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="search-input"
                     />
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
 
-      {/* GRAPH 4: Live Subject Dossier ("WHO SELECTED WHAT") */}
-      <div className="svo-visual-card spooky-glass-card">
-        <div className="visual-card-header">
-          <div className="header-title-row">
-            <Users size={18} className="text-red-500" />
-            <h3 className="visual-heading">LIVE SUBJECT DOSSIER (WHO SELECTED WHAT)</h3>
-          </div>
-          <span className="dossier-count-badge">
-            {dossierList.length} PARTICIPANTS RECORDED
-          </span>
-        </div>
-
-        {/* Dossier Search and Filters */}
-        <div className="dossier-filters-row">
-          <div className="dossier-search-box">
-            <Search size={14} className="text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Search by participant name..."
-              value={dossierSearch}
-              onChange={(e) => setDossierSearch(e.target.value)}
-              className="dossier-search-input"
-            />
-          </div>
-
-          <div className="dossier-filter-buttons">
-            <select
-              value={dossierFilterPhase}
-              onChange={(e) => setDossierFilterPhase(e.target.value as any)}
-              className="dossier-select"
-            >
-              <option value="all">ALL PHASES</option>
-              <option value="pre">PRE-LECTURE ONLY</option>
-              <option value="post">POST-LECTURE ONLY</option>
-            </select>
-
-            <select
-              value={dossierFilterType}
-              onChange={(e) => setDossierFilterType(e.target.value)}
-              className="dossier-select"
-            >
-              <option value="all">ALL ORIENTATIONS</option>
-              <option value="prosocial">PROSOCIAL</option>
-              <option value="individualistic">INDIVIDUALISTIC</option>
-              <option value="competitive">COMPETITIVE</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Dossier Roster */}
-        {dossierList.length === 0 ? (
-          <div className="stats-empty-state">
-            <Search size={24} className="opacity-40" />
-            <p>No matching participants found.</p>
-          </div>
-        ) : (
-          <div className="dossier-list">
-            {dossierList.map((resp, idx) => {
-              const itemKey = `${resp.user_id}-${resp.phase}-${idx}`
-              const isExpanded = expandedUserKey === itemKey
-              const desc = ORIENTATION_DESCRIPTIONS[resp.orientation]
-
-              return (
-                <div key={itemKey} className="dossier-item">
-                  <div
-                    className="dossier-item-header"
-                    onClick={() => setExpandedUserKey(isExpanded ? null : itemKey)}
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="filter-select"
                   >
-                    <div className="dossier-subject-info">
-                      <span className="subject-avatar">
-                        {resp.display_name.charAt(0).toUpperCase()}
-                      </span>
-                      <div>
-                        <strong className="subject-name">{resp.display_name}</strong>
-                        {resp.email && <small className="subject-email">{resp.email}</small>}
-                      </div>
-                    </div>
-
-                    <div className="dossier-item-badges">
-                      <span className={`phase-pill ${resp.phase === 'pre' ? 'pill-pre' : 'pill-post'}`}>
-                        {resp.phase === 'pre' ? 'PRE 🕯️' : 'POST 🎭'}
-                      </span>
-                      <span
-                        className="orientation-pill"
-                        style={{
-                          background: desc ? desc.color : '#71717a',
-                          color: '#ffffff',
-                        }}
-                      >
-                        {desc ? `${desc.emoji} ${desc.title}` : resp.orientation}
-                      </span>
-                      <span className="scores-tag">
-                        {resp.prosocial_count} Coop • {resp.individualistic_count} Self • {resp.competitive_count} Comp
-                      </span>
-                      <button
-                        type="button"
-                        className="expand-toggle-btn"
-                        aria-label="Expand choices"
-                      >
-                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Expanded 9 Choices View */}
-                  {isExpanded && resp.choices && (
-                    <div className="dossier-choices-drawer">
-                      <strong className="drawer-title">INDIVIDUAL SCENARIO DECISIONS:</strong>
-                      <div className="choices-pill-grid">
-                        {SVO_QUESTIONS.map((q) => {
-                          const chosen = resp.choices[q.id]
-                          const optData = chosen ? q.options[chosen] : null
-
-                          return (
-                            <div key={q.id} className="choice-chip-detailed">
-                              <span className="q-num">Q{q.id}:</span>
-                              <strong className="q-chosen">{chosen || '—'}</strong>
-                              {optData && (
-                                <span className={`q-type ${optData.type}`}>
-                                  ({optData.type.substring(0, 4)})
-                                </span>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    <option value="all">All Orientations</option>
+                    <option value="prosocial">Cooperative</option>
+                    <option value="individualistic">Self-Maximizing</option>
+                    <option value="competitive">Competitive</option>
+                  </select>
                 </div>
-              )
-            })}
+
+                <div className="roster-list">
+                  {rosterList.map((item, idx) => {
+                    const desc = ORIENTATION_DESCRIPTIONS[item.orientation]
+                    return (
+                      <div key={item.id || `${item.user_id}_${item.phase}_${idx}`} className="roster-item">
+                        <div className="roster-user-info">
+                          <span className="roster-user-name">{item.display_name}</span>
+                          <span className="roster-phase-tag">
+                            {item.phase === 'pre' ? 'Round 1 (Pre)' : 'Round 2 (Post)'}
+                          </span>
+                        </div>
+                        <div
+                          className="roster-badge"
+                          style={{
+                            borderColor: desc?.color || '#dc2626',
+                            color: desc?.color || '#ffffff',
+                          }}
+                        >
+                          <span>{desc?.emoji}</span>
+                          <strong>{desc?.title || item.orientation}</strong>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="analytics-back-action">
+            <button
+              type="button"
+              onClick={() => setSubView('test')}
+              className="button button-small button-outline-black"
+            >
+              ← Back to My Experiment
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -584,42 +584,20 @@ export default function Motion06HalloweenVotingPage() {
           </div>
 
           <div className="spooky-motion-category">
-            HEAR ME OUT PRESENTS: WE ARE ALL EVIL
+            HEAR ME OUT • WE ARE ALL EVIL
           </div>
 
           <h1 className="live-motion-title">
             HOW GOOD ARE YOU<br />
             <span className="highlight-text">WHEN NO ONE IS WATCHING?</span>
-            <span className="title-or-divider">
-              <span className="or-line" />
-              <span className="or-pill">THE TRIBUNAL</span>
-              <span className="or-line" />
-            </span>
-            <span className="highlight-text">ARE WE ALL EVIL?</span>
           </h1>
 
           <p className="motion-subtitle">
-            <em>One authenticated vote per person. Change your mind anytime.</em>
+            One verified vote per person. Change your mind anytime during the event.
           </p>
-
-          {/* 3 Acts Schedule Pill Row */}
-          <div className="spooky-acts-pill-row">
-            <div className="spooky-act-pill">
-              <strong className="spooky-act-tag">01 / THE UNMASKING 🕯️</strong>
-              <span className="spooky-act-name">Dr. Harshil Vyas (IIT Research)</span>
-            </div>
-            <div className="spooky-act-pill">
-              <strong className="spooky-act-tag">02 / MORAL TRIBUNAL ⚖️</strong>
-              <span className="spooky-act-name">Does curiosity reveal character?</span>
-            </div>
-            <div className="spooky-act-pill">
-              <strong className="spooky-act-tag">03 / THE IMPOSTER 🎭</strong>
-              <span className="spooky-act-name">Psychological Mafia Game</span>
-            </div>
-          </div>
         </section>
 
-        {/* Tab Switcher: Moral Tribunal Ballot vs Dr. Harshil's SVO Experiment */}
+        {/* Tab Switcher: Moral Tribunal Ballot vs Dr. Harshil's SVO Study */}
         <div className="m6-tab-switcher">
           <button
             type="button"
@@ -627,7 +605,10 @@ export default function Motion06HalloweenVotingPage() {
             className={`m6-tab-btn ${activeTab === 'ballot' ? 'is-active' : ''}`}
           >
             <Scale size={18} />
-            <span>1. MORAL TRIBUNAL BALLOT</span>
+            <div className="tab-btn-text">
+              <strong>1. LIVE DEBATE BALLOT</strong>
+              <small>Cast your verdict on the motion</small>
+            </div>
           </button>
           <button
             type="button"
@@ -635,7 +616,10 @@ export default function Motion06HalloweenVotingPage() {
             className={`m6-tab-btn ${activeTab === 'svo' ? 'is-active' : ''}`}
           >
             <Brain size={18} />
-            <span>2. DR. HARSHIL&apos;S EXPERIMENT (PRE &amp; POST)</span>
+            <div className="tab-btn-text">
+              <strong>2. DR. HARSHIL&apos;S STUDY</strong>
+              <small>9-scenario moral experiment</small>
+            </div>
           </button>
         </div>
 

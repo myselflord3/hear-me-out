@@ -273,12 +273,12 @@ export default function Page() {
                   <span className="act-number-tag">01 / THE UNMASKING 🕯️</span>
                   <span className="act-badge-pill">🧠 The Lecture</span>
                 </div>
-                <strong className="act-speaker-badge">Dr. Harshil Vyas • IIT Research Consultant</strong>
+                <strong className="act-speaker-badge">Dr. Harshil Vyas (IIT Research Consultant)</strong>
                 <p className="act-desc-text">
                   Why fear excites us, why true crime draws us in, and what disturbing curiosity reveals about our character.
                 </p>
-                <Link href="/m6?tab=svo" style={{ fontSize: '0.72rem', fontWeight: 900, color: 'var(--red)', marginTop: '0.35rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                  Take Dr. Harshil&apos;s SVO Test (Pre &amp; Post) →
+                <Link href="/m6?tab=svo" className="act-action-link">
+                  Take Dr. Harshil&apos;s SVO Study (Pre &amp; Post) →
                 </Link>
               </div>
 
@@ -288,8 +288,11 @@ export default function Page() {
                   <span className="act-badge-pill">⚔️ The Debate</span>
                 </div>
                 <p className="act-desc-text">
-                  A live debate: Does curiosity reveal character? Are we good by morals, or only because society punishes us when we&apos;re not?
+                  Does curiosity reveal character? Are we good by morals, or only because society punishes us when we&apos;re not?
                 </p>
+                <Link href="/m6" className="act-action-link">
+                  Open Live Motion 06 Ballot →
+                </Link>
               </div>
 
               <div className="act-card-item">
@@ -298,8 +301,11 @@ export default function Page() {
                   <span className="act-badge-pill">🕵️ The Mafia Game</span>
                 </div>
                 <p className="act-desc-text">
-                  A psychological game of deception where trust costs everything. Hidden identities, questionable intentions, zero safe bets.
+                  A psychological game of deception where trust costs everything. Hidden identities and questionable intentions.
                 </p>
+                <span className="act-live-note">
+                  📍 Played live in-person at Monkey Cafe
+                </span>
               </div>
             </div>
           </div>
